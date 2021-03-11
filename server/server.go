@@ -1,7 +1,6 @@
 package server
 
 import (
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -11,13 +10,12 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/net-byte/opensocks/config"
+	"github.com/net-byte/opensocks/proxy"
 )
 
-const bufferSize int = 4096
-
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:    bufferSize,
-	WriteBufferSize:   bufferSize,
+	ReadBufferSize:    proxy.BufferSize,
+	WriteBufferSize:   proxy.BufferSize,
 	EnableCompression: true,
 	CheckOrigin: func(r *http.Request) bool {
 		return true
@@ -68,35 +66,10 @@ func Start(config config.Config) {
 			return
 		}
 		// Forward data
-		go forwardClient(wsConn, conn)
-		go forwardRemote(wsConn, conn)
+		go proxy.ForwardClient(wsConn, conn)
+		go proxy.ForwardRemote(wsConn, conn)
 
 	})
 
 	http.ListenAndServe(config.ServerAddr, nil)
-}
-
-func forwardClient(wsConn *websocket.Conn, conn net.Conn) {
-	defer wsConn.Close()
-	defer conn.Close()
-	for {
-		buffer := make([]byte, bufferSize)
-		n, err := conn.Read(buffer)
-		if err != nil || err == io.EOF {
-			break
-		}
-		wsConn.WriteMessage(websocket.BinaryMessage, buffer[:n])
-	}
-}
-
-func forwardRemote(wsConn *websocket.Conn, conn net.Conn) {
-	defer wsConn.Close()
-	defer conn.Close()
-	for {
-		_, buffer, err := wsConn.ReadMessage()
-		if err != nil || err == io.EOF {
-			break
-		}
-		conn.Write(buffer[:])
-	}
 }
