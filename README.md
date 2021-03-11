@@ -1,6 +1,6 @@
 # opensocks
 
-Socks5 over websocket,it supports TCP and UDP.  
+Socks5(tcp/udp) over websocket,it helps you see the world.
 
 ![image](https://img.shields.io/badge/License-MIT-orange)
 ![image](https://img.shields.io/badge/License-Anti--996-red)
