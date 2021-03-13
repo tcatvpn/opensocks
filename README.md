@@ -11,7 +11,7 @@ Socks5(tcp/udp) over websocket,it helps you see the world.
 Usage of ./opensocks:
   -S	server mode
   -l string
-    	local address (default "0.0.0.0:1081")
+    	local address (default "0.0.0.0:1080")
   -p string
     	password (default "pass@123456")
   -s string
