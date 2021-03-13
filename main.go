@@ -10,7 +10,7 @@ import (
 
 func main() {
 	config := config.Config{}
-	flag.StringVar(&config.LocalAddr, "l", "0.0.0.0:1081", "local address")
+	flag.StringVar(&config.LocalAddr, "l", "0.0.0.0:1080", "local address")
 	flag.StringVar(&config.ServerAddr, "s", "0.0.0.0:8081", "server address")
 	flag.StringVar(&config.Username, "u", "admin", "username")
 	flag.StringVar(&config.Password, "p", "pass@123456", "password")
