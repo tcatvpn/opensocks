@@ -20,6 +20,9 @@ Usage of ./opensocks:
     	username (default "admin")
   -wss
     	wss/ws scheme (default true)
+  -bypass
+    	bypass private ip (default true)
+
 
 ```
 
