@@ -8,6 +8,7 @@ import (
 
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/proxy"
+	"github.com/net-byte/opensocks/utils"
 )
 
 //Start starts server
@@ -51,6 +52,10 @@ func connHandler(conn net.Conn, config config.Config) {
 	case proxy.ConnectCommand:
 		//read the addr
 		host, port, addrType := getAddr(conn, b)
+		if config.Bypass && addrType != proxy.FqdnAddress && utils.IsPrivateIP(net.ParseIP(host)) {
+			proxy.DirectProxy(conn, host, port, config)
+			return
+		}
 		proxy.TcpProxy(conn, addrType, host, port, config)
 		return
 	case proxy.AssociateCommand:

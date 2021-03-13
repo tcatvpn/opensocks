@@ -16,6 +16,7 @@ func main() {
 	flag.StringVar(&config.Password, "p", "pass@123456", "password")
 	flag.BoolVar(&config.ServerMode, "S", false, "server mode")
 	flag.BoolVar(&config.Wss, "wss", true, "wss/ws scheme")
+	flag.BoolVar(&config.Bypass, "bypass", true, "bypass private ip")
 	flag.Parse()
 	if config.ServerMode {
 		server.Start(config)
