@@ -7,4 +7,5 @@ type Config struct {
 	Password   string
 	ServerMode bool
 	Wss        bool
+	Bypass     bool
 }
