@@ -27,6 +27,9 @@ func init() {
 }
 
 func IsPrivateIP(ip net.IP) bool {
+	if ip == nil {
+		return false
+	}
 	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
 		return true
 	}

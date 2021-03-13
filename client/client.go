@@ -52,7 +52,7 @@ func connHandler(conn net.Conn, config config.Config) {
 	case proxy.ConnectCommand:
 		//read the addr
 		host, port, addrType := getAddr(conn, b)
-		if config.Bypass && addrType != proxy.FqdnAddress && utils.IsPrivateIP(net.ParseIP(host)) {
+		if config.Bypass && utils.IsPrivateIP(net.ParseIP(host)) {
 			proxy.DirectProxy(conn, host, port, config)
 			return
 		}
