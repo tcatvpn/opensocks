@@ -31,7 +31,7 @@ Usage of ./opensocks:
 
 ## Run client
 ```
-docker run -d --restart=always  --network=host --name opensocks-client -p 1081:1081 netbyte/opensocks -s=YOUR_DOMIAN:443
+docker run -d --restart=always  --network=host --name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:443
 ```  
 
 ## Run caddy  
@@ -57,7 +57,7 @@ your.domain {
 
 ## Run server
 ```
-docker run  -d --restart=always --net=host --name opensocks-server -p 8081:8081 netbyte/opensocks -S
+docker run  -d --restart=always --net=host --name opensocks-server netbyte/opensocks -S
 ```
 
 
