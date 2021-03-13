@@ -25,7 +25,7 @@ func UdpProxy(conn net.Conn, config config.Config) {
 		return
 	}
 	bindUDPAddr, _ := net.ResolveUDPAddr("udp", udpConn.LocalAddr().String())
-	log.Printf("bind udp addr %v %v", bindUDPAddr.IP.To4().String(), bindUDPAddr.Port)
+	//log.Printf("bind udp addr %v %v", bindUDPAddr.IP.To4().String(), bindUDPAddr.Port)
 
 	//reply to client
 	response := []byte{Socks5Version, SuccessReply, 0x00, 0x01}

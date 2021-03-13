@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -43,9 +45,8 @@ func Start(config config.Config) {
 		if err != nil {
 			return
 		}
-		// Read : host + "||" + port + "||" + username + "||" + password + "||" + network + "||" + UnixNano
+		// data format : host + "||" + port + "||" + username + "||" + password + "||" + network + "||" + UnixNano
 		addr := string(buffer)
-		log.Printf("remote addr:%v", addr)
 		s := strings.Split(addr, "||")
 		if len(s) < 5 {
 			return
@@ -69,6 +70,15 @@ func Start(config config.Config) {
 		go proxy.ForwardClient(wsConn, conn)
 		go proxy.ForwardRemote(wsConn, conn)
 
+	})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		ip := req.Header.Get("X-Forwarded-For")
+		if "" == ip {
+			ip = strings.Split(req.RemoteAddr, ":")[0]
+		}
+		resp := fmt.Sprintf("Hello,%v \n", ip)
+		io.WriteString(w, resp)
 	})
 
 	http.ListenAndServe(config.ServerAddr, nil)

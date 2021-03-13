@@ -11,7 +11,6 @@ func TcpProxy(conn net.Conn, addrType uint8, host string, port string, config co
 		return
 	}
 
-	//log.Printf("remote proxy %s", host)
 	wsConn := ConnectWS("tcp", host, port, config)
 	if wsConn == nil {
 		Response(conn, ConnectionRefused)
