@@ -115,9 +115,8 @@ func getAddr(conn net.Conn, b []byte) (host string, port string, addrType uint8)
 		host = net.IP(b[4:19]).String()
 		break
 	default:
-		return "", "0", b[3]
+		return "", "", b[3]
 	}
 	port = strconv.Itoa(int(b[len-2])<<8 | int(b[len-1]))
-	//log.Printf("host %v port %v addType %v", host, port, b[3])
 	return host, port, b[3]
 }
