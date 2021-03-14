@@ -9,6 +9,7 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/net-byte/opensocks/config"
@@ -111,6 +112,7 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 		if wsConn == nil {
 			break
 		}
+		wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
 		log.Printf("udp client to remote %v:%v", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port))
 		go func() {

@@ -24,6 +24,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 		log.Println(err)
 		return nil
 	}
+	c.SetReadDeadline(time.Now().Add(60 * time.Second))
 	// Send host addr to proxy server side
 	var data bytes.Buffer
 	data.WriteString(host)
