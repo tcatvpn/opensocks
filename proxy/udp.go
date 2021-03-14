@@ -119,29 +119,30 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 			}
 			wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 			udpServer.wsConnMap.Store(dstAddr.String(), wsConn)
+			go func() {
+				defer wsConn.Close()
+				bufCopy := make([]byte, BufferSize)
+				for {
+					_, buffer, err := wsConn.ReadMessage()
+					if err != nil || err == io.EOF || len(buffer) == 0 {
+						break
+					}
+					if header, ok := udpServer.dstAddrMap.Load(dstAddr.String()); ok {
+						head := []byte(header.(string))
+						headLength := len(head)
+						copy(bufCopy[0:], head[0:headLength])
+						copy(bufCopy[headLength:], buffer[0:])
+						data := bufCopy[0 : headLength+len(buffer)]
+						log.Printf("udp remote to client %v", udpServer.clientUDPAddr)
+						udpConn.WriteToUDP(data, udpServer.clientUDPAddr)
+					}
+				}
+				log.Printf("udp forward remote to client done")
+			}()
 		}
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
 		log.Printf("udp client to remote %v:%v", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port))
-		go func() {
-			defer wsConn.Close()
-			bufCopy := make([]byte, BufferSize)
-			for {
-				_, buffer, err := wsConn.ReadMessage()
-				if err != nil || err == io.EOF || len(buffer) == 0 {
-					break
-				}
-				if header, ok := udpServer.dstAddrMap.Load(dstAddr.String()); ok {
-					head := []byte(header.(string))
-					headLength := len(head)
-					copy(bufCopy[0:], head[0:headLength])
-					copy(bufCopy[headLength:], buffer[0:])
-					data := bufCopy[0 : headLength+len(buffer)]
-					log.Printf("udp remote to client %v", udpServer.clientUDPAddr)
-					udpConn.WriteToUDP(data, udpServer.clientUDPAddr)
-				}
-			}
-			log.Printf("udp forward remote to client done")
-		}()
+
 	}
 	log.Printf("udp forward client to remote done")
 }
