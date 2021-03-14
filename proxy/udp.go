@@ -27,7 +27,7 @@ func UdpProxy(tcpConn net.Conn, config config.Config) {
 	}
 	defer udpConn.Close()
 	bindUDPAddr, _ := net.ResolveUDPAddr("udp", udpConn.LocalAddr().String())
-	//log.Printf("bind udp addr %v %v", bindUDPAddr.IP.To4().String(), bindUDPAddr.Port)
+	log.Printf("bind udp addr %v %v", bindUDPAddr.IP.To4().String(), bindUDPAddr.Port)
 
 	//reply to client
 	response := []byte{Socks5Version, SuccessReply, 0x00, 0x01}
@@ -40,6 +40,7 @@ func UdpProxy(tcpConn net.Conn, config config.Config) {
 	go keepUDPAlive(tcpConn.(*net.TCPConn), done)
 	go replyUDP(udpConn, done, config)
 	<-done
+	log.Printf("udp proxy has done, addr %v %v", bindUDPAddr.IP.To4().String(), bindUDPAddr.Port)
 }
 
 type udpServer struct {
@@ -126,6 +127,7 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 			return
 		}
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
+		log.Panicf("udp client to remote %v:%v", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port))
 		go func() {
 			defer wsConn.Close()
 			bufCopy := make([]byte, BufferSize)
@@ -141,6 +143,7 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 					copy(bufCopy[0:], head[0:headLength])
 					copy(bufCopy[headLength:], buffer[0:])
 					data := bufCopy[0 : headLength+len(buffer)]
+					log.Printf("udp remote to client %v", udpServer.clientUDPAddr)
 					udpConn.WriteToUDP(data, udpServer.clientUDPAddr)
 				}
 			}
@@ -156,9 +159,10 @@ func keepUDPAlive(tcpConn *net.TCPConn, done chan<- bool) {
 		_, err := tcpConn.Read(buf[0:])
 		if err != nil {
 			done <- true
-			return
+			break
 		}
 	}
+	log.Printf("keepUDPAlive done")
 }
 
 func replyUDP(udpConn *net.UDPConn, done chan<- bool, config config.Config) {
@@ -169,5 +173,6 @@ func replyUDP(udpConn *net.UDPConn, done chan<- bool, config config.Config) {
 	go udpServer.forward(udpConn, config)
 	udpServer.monitor()
 	done <- true
+	log.Println("replyUDP done")
 	return
 }
