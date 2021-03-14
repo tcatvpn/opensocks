@@ -38,7 +38,7 @@ func UdpProxy(tcpConn net.Conn, config config.Config) {
 
 	done := make(chan bool, 0)
 	go keepUDPAlive(tcpConn.(*net.TCPConn), done)
-	go replyUDP(udpConn, done, config)
+	go replyUDP(udpConn, config)
 	<-done
 	log.Printf("udp proxy has done, addr %v %v", bindUDPAddr.IP.To4().String(), bindUDPAddr.Port)
 }
@@ -54,8 +54,8 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 		var dstAddr *net.UDPAddr
 		var data []byte
 		n, udpAddr, err := udpConn.ReadFromUDP(buf)
-		if err != nil || err == io.EOF {
-			return
+		if err != nil || err == io.EOF || n == 0 {
+			break
 		}
 		if udpServer.clientUDPAddr == nil {
 			udpServer.clientUDPAddr = udpAddr
@@ -109,7 +109,7 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 		}
 		wsConn := ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), config)
 		if wsConn == nil {
-			continue
+			break
 		}
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
 		log.Printf("udp client to remote %v:%v", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port))
@@ -118,8 +118,8 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 			bufCopy := make([]byte, BufferSize)
 			for {
 				_, buffer, err := wsConn.ReadMessage()
-				if err != nil || err == io.EOF {
-					return
+				if err != nil || err == io.EOF || len(buffer) == 0 {
+					break
 				}
 				if header, ok := udpServer.dstAddrMap.Load(dstAddr.String()); ok {
 					head := []byte(header.(string))
@@ -133,7 +133,6 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 			}
 		}()
 	}
-
 }
 
 func keepUDPAlive(tcpConn *net.TCPConn, done chan<- bool) {
@@ -142,17 +141,16 @@ func keepUDPAlive(tcpConn *net.TCPConn, done chan<- bool) {
 	for {
 		_, err := tcpConn.Read(buf[0:])
 		if err != nil {
-			done <- true
 			break
 		}
 	}
 	log.Printf("keepUDPAlive done")
+	done <- true
 }
 
-func replyUDP(udpConn *net.UDPConn, done chan<- bool, config config.Config) {
+func replyUDP(udpConn *net.UDPConn, config config.Config) {
 	udpServer := &udpServer{}
 	udpServer.forward(udpConn, config)
-	done <- true
-	log.Println("replyUDP done")
+	log.Printf("replyUDP done")
 	return
 }
