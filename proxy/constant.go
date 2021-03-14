@@ -35,5 +35,5 @@ const (
 )
 
 const (
-	BufferSize int = 16 * 1024
+	BufferSize int = 4 * 1024
 )
