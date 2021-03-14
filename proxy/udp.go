@@ -131,26 +131,26 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 					udpConn.WriteToUDP(data, udpServer.clientUDPAddr)
 				}
 			}
+			log.Printf("udp forward remote to client done")
 		}()
 	}
+	log.Printf("udp forward client to remote done")
 }
 
 func keepUDPAlive(tcpConn *net.TCPConn, done chan<- bool) {
 	tcpConn.SetKeepAlive(true)
-	buf := make([]byte, 1024)
+	buf := make([]byte, BufferSize)
 	for {
 		_, err := tcpConn.Read(buf[0:])
 		if err != nil {
 			break
 		}
 	}
-	log.Printf("keepUDPAlive done")
 	done <- true
 }
 
 func replyUDP(udpConn *net.UDPConn, config config.Config) {
 	udpServer := &udpServer{}
 	udpServer.forward(udpConn, config)
-	log.Printf("replyUDP done")
 	return
 }

@@ -47,7 +47,7 @@ func ForwardRemote(wsConn *websocket.Conn, conn net.Conn) {
 	buffer := make([]byte, BufferSize)
 	for {
 		n, err := conn.Read(buffer)
-		if err != nil || err == io.EOF {
+		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
 		wsConn.WriteMessage(websocket.BinaryMessage, buffer[:n])
@@ -59,7 +59,7 @@ func ForwardClient(wsConn *websocket.Conn, conn net.Conn) {
 	defer conn.Close()
 	for {
 		_, buffer, err := wsConn.ReadMessage()
-		if err != nil || err == io.EOF {
+		if err != nil || err == io.EOF || len(buffer) == 0 {
 			break
 		}
 		conn.Write(buffer[:])
