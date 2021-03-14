@@ -47,6 +47,7 @@ func UdpProxy(tcpConn net.Conn, config config.Config) {
 type udpServer struct {
 	clientUDPAddr *net.UDPAddr
 	dstAddrMap    sync.Map
+	wsConnMap     sync.Map
 }
 
 func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) {
@@ -108,11 +109,17 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 		default:
 			continue
 		}
-		wsConn := ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), config)
-		if wsConn == nil {
-			break
+		var wsConn *websocket.Conn
+		if value, ok := udpServer.wsConnMap.Load(dstAddr.String()); ok {
+			wsConn = value.(*websocket.Conn)
+		} else {
+			wsConn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), config)
+			if wsConn == nil {
+				break
+			}
+			wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
+			udpServer.wsConnMap.Store(dstAddr.String(), wsConn)
 		}
-		wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
 		log.Printf("udp client to remote %v:%v", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port))
 		go func() {
