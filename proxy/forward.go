@@ -44,8 +44,8 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 func ForwardRemote(wsConn *websocket.Conn, conn net.Conn) {
 	defer wsConn.Close()
 	defer conn.Close()
+	buffer := make([]byte, BufferSize)
 	for {
-		buffer := make([]byte, BufferSize)
 		n, err := conn.Read(buffer)
 		if err != nil || err == io.EOF {
 			break
