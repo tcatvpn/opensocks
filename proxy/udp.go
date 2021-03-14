@@ -127,7 +127,7 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 			return
 		}
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
-		log.Panicf("udp client to remote %v:%v", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port))
+		log.Printf("udp client to remote %v:%v", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port))
 		go func() {
 			defer wsConn.Close()
 			bufCopy := make([]byte, BufferSize)
