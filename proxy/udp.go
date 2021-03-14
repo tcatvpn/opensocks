@@ -57,9 +57,8 @@ func (udpServer *udpServer) monitor() {
 
 func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) {
 	defer udpConn.Close()
+	buf := make([]byte, BufferSize)
 	for {
-		buf := make([]byte, BufferSize)
-		var wsConn *websocket.Conn
 		var dstAddr *net.UDPAddr
 		var data []byte
 		n, udpAddr, err := udpConn.ReadFromUDP(buf)
@@ -120,7 +119,7 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 		default:
 			continue
 		}
-		wsConn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), config)
+		wsConn := ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), config)
 		if wsConn == nil {
 			udpServer.exitSignal <- true
 			return
