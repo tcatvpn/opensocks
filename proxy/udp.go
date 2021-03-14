@@ -44,18 +44,8 @@ func UdpProxy(tcpConn net.Conn, config config.Config) {
 }
 
 type udpServer struct {
-	exitSignal    chan bool
 	clientUDPAddr *net.UDPAddr
 	dstAddrMap    sync.Map
-}
-
-func (udpServer *udpServer) monitor() {
-	for {
-		select {
-		case <-udpServer.exitSignal:
-			return
-		}
-	}
 }
 
 func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) {
@@ -64,8 +54,7 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 		var dstAddr *net.UDPAddr
 		var data []byte
 		n, udpAddr, err := udpConn.ReadFromUDP(buf)
-		if err != nil || n == 0 {
-			udpServer.exitSignal <- true
+		if err != nil || err == io.EOF {
 			return
 		}
 		if udpServer.clientUDPAddr == nil {
@@ -92,7 +81,6 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 			}
 			udpServer.dstAddrMap.LoadOrStore(dstAddr.String(), string(b[0:10]))
 			data = b[10:]
-			break
 		case FqdnAddress:
 			domainLength := int(b[4])
 			domain := string(b[5 : 5+domainLength])
@@ -107,7 +95,6 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 			}
 			udpServer.dstAddrMap.LoadOrStore(dstAddr.String(), string(b[0:7+domainLength]))
 			data = b[7+domainLength:]
-			break
 		case Ipv6Address:
 			{
 				dstAddr = &net.UDPAddr{
@@ -116,15 +103,13 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 				}
 				udpServer.dstAddrMap.LoadOrStore(dstAddr.String(), string(b[0:22]))
 				data = b[22:]
-				break
 			}
 		default:
 			continue
 		}
 		wsConn := ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), config)
 		if wsConn == nil {
-			udpServer.exitSignal <- true
-			return
+			continue
 		}
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
 		log.Printf("udp client to remote %v:%v", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port))
@@ -134,7 +119,6 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 			for {
 				_, buffer, err := wsConn.ReadMessage()
 				if err != nil || err == io.EOF {
-					udpServer.exitSignal <- true
 					return
 				}
 				if header, ok := udpServer.dstAddrMap.Load(dstAddr.String()); ok {
@@ -166,12 +150,8 @@ func keepUDPAlive(tcpConn *net.TCPConn, done chan<- bool) {
 }
 
 func replyUDP(udpConn *net.UDPConn, done chan<- bool, config config.Config) {
-	udpServer := &udpServer{
-		exitSignal: make(chan bool, 0),
-	}
-
-	go udpServer.forward(udpConn, config)
-	udpServer.monitor()
+	udpServer := &udpServer{}
+	udpServer.forward(udpConn, config)
 	done <- true
 	log.Println("replyUDP done")
 	return
