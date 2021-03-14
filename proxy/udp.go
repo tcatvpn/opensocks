@@ -14,9 +14,10 @@ import (
 	"github.com/net-byte/opensocks/config"
 )
 
-func UdpProxy(conn net.Conn, config config.Config) {
+func UdpProxy(tcpConn net.Conn, config config.Config) {
+	defer tcpConn.Close()
 	//bind udp local server
-	localTCPAddr, _ := net.ResolveTCPAddr("tcp", conn.LocalAddr().String())
+	localTCPAddr, _ := net.ResolveTCPAddr("tcp", tcpConn.LocalAddr().String())
 	localUDPAddr := fmt.Sprintf("%s:%d", localTCPAddr.IP.String(), 0)
 	udpAddr, _ := net.ResolveUDPAddr("udp", localUDPAddr)
 	udpConn, err := net.ListenUDP("udp", udpAddr)
@@ -24,6 +25,7 @@ func UdpProxy(conn net.Conn, config config.Config) {
 		log.Println(err)
 		return
 	}
+	defer udpConn.Close()
 	bindUDPAddr, _ := net.ResolveUDPAddr("udp", udpConn.LocalAddr().String())
 	//log.Printf("bind udp addr %v %v", bindUDPAddr.IP.To4().String(), bindUDPAddr.Port)
 
@@ -32,10 +34,10 @@ func UdpProxy(conn net.Conn, config config.Config) {
 	buffer := bytes.NewBuffer(response)
 	binary.Write(buffer, binary.BigEndian, bindUDPAddr.IP.To4())
 	binary.Write(buffer, binary.BigEndian, uint16(bindUDPAddr.Port))
-	conn.Write(buffer.Bytes())
+	tcpConn.Write(buffer.Bytes())
 
 	done := make(chan bool, 0)
-	go keepUDPAlive(conn.(*net.TCPConn), done)
+	go keepUDPAlive(tcpConn.(*net.TCPConn), done)
 	go replyUDP(udpConn, done, config)
 	<-done
 }
@@ -56,7 +58,6 @@ func (udpServer *udpServer) monitor() {
 }
 
 func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) {
-	defer udpConn.Close()
 	buf := make([]byte, BufferSize)
 	for {
 		var dstAddr *net.UDPAddr
