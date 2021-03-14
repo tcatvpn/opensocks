@@ -126,6 +126,7 @@ func (udpServer *udpServer) forward(udpConn *net.UDPConn, config config.Config) 
 		}
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
 		go func() {
+			defer wsConn.Close()
 			bufCopy := make([]byte, BufferSize)
 			for {
 				_, buffer, err := wsConn.ReadMessage()
