@@ -1,6 +1,6 @@
 # opensocks
 
-Socks5(tcp/udp) over websocket,it helps you see the world.
+Socks5(tcp/udp) over websocket,it helps you break the wall and see the world.
 
 ![image](https://img.shields.io/badge/License-MIT-orange)
 ![image](https://img.shields.io/badge/License-Anti--996-red)
