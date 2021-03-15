@@ -10,7 +10,7 @@ import (
 )
 
 func DirectProxy(conn net.Conn, host string, port string, config config.Config) {
-	remoteConn := connectTcp(host, port, config)
+	remoteConn := connectTCP(host, port, config)
 	if remoteConn == nil {
 		Response(conn, ConnectionRefused)
 		return
@@ -21,7 +21,7 @@ func DirectProxy(conn net.Conn, host string, port string, config config.Config) 
 	go forward(conn, remoteConn)
 }
 
-func connectTcp(host string, port string, config config.Config) net.Conn {
+func connectTCP(host string, port string, config config.Config) net.Conn {
 	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 60*time.Second)
 	if err != nil {
 		log.Println(err)
