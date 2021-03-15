@@ -56,10 +56,10 @@ func connHandler(conn net.Conn, config config.Config) {
 			proxy.DirectProxy(conn, host, port, config)
 			return
 		}
-		proxy.TcpProxy(conn, addrType, host, port, config)
+		proxy.TCPProxy(conn, addrType, host, port, config)
 		return
 	case proxy.AssociateCommand:
-		proxy.UdpProxy(conn, config)
+		proxy.UDPProxy(conn, config)
 		return
 	case proxy.BindCommand:
 		return

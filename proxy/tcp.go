@@ -6,7 +6,7 @@ import (
 	"github.com/net-byte/opensocks/config"
 )
 
-func TcpProxy(conn net.Conn, addrType uint8, host string, port string, config config.Config) {
+func TCPProxy(conn net.Conn, addrType uint8, host string, port string, config config.Config) {
 	if host == "" || port == "" {
 		return
 	}
