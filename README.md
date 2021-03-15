@@ -5,7 +5,21 @@ Socks5(tcp/udp) over websocket,it helps you break the wall and see the world.
 ![image](https://img.shields.io/badge/License-MIT-orange)
 ![image](https://img.shields.io/badge/License-Anti--996-red)
 
-# Usage  
+# Features
+
+* "No Auth" mode
+* Support for the CONNECT command
+* Support for the ASSOCIATE command
+* Support nginx/caddy/cloudflare cdn for reverse proxy
+* Websocket for the transport layer
+
+# Architecture
+```
+App<----->opensocks-client<---wss--->ningx/caddy/cdn reverse proxy<----->opensocks-server<----->real server
+```
+
+# Usage
+## Cmd
 
 ```
 Usage of ./opensocks:
@@ -26,20 +40,25 @@ Usage of ./opensocks:
 
 ```
 
-# Run on Docker  
+## Docker
 
 
-## Run client
+### Run client
 ```
 docker run -d --restart=always  --network=host --name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:443
-```  
+```
 
-## Run caddy  
+### Run server
+```
+docker run  -d --restart=always --net=host --name opensocks-server netbyte/opensocks -S
+```
+
+### Run caddy for reverse proxy server
 ```
 docker run -d --restart=always --network=host -v /data/caddy/Caddyfile:/etc/Caddyfile -v /data/caddy/.caddy:/root/.caddy -e ACME_AGREE=true --name caddy abiosoft/caddy
-```  
+```
 
-## Config Caddyfile  
+### Config Caddyfile
 ```
 your.domain {
     gzip
@@ -53,11 +72,10 @@ your.domain {
         header_upstream X-Forwarded-Proto {scheme}
     }
 }
-```  
+```
 
-## Run server
-```
-docker run  -d --restart=always --net=host --name opensocks-server netbyte/opensocks -S
-```
+## License
+
+[The MIT License (MIT)](https://raw.githubusercontent.com/net-byte/opensocks/main/LICENSE)
 
 
