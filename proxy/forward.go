@@ -24,7 +24,6 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 		log.Println(err)
 		return nil
 	}
-	c.SetReadDeadline(time.Now().Add(60 * time.Second))
 	// Send host addr to proxy server side
 	var data bytes.Buffer
 	data.WriteString(host)
@@ -47,6 +46,7 @@ func ForwardRemote(wsConn *websocket.Conn, conn net.Conn) {
 	defer conn.Close()
 	buffer := make([]byte, BufferSize)
 	for {
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		n, err := conn.Read(buffer)
 		if err != nil || err == io.EOF || n == 0 {
 			break
@@ -59,6 +59,7 @@ func ForwardClient(wsConn *websocket.Conn, conn net.Conn) {
 	defer wsConn.Close()
 	defer conn.Close()
 	for {
+		wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		_, buffer, err := wsConn.ReadMessage()
 		if err != nil || err == io.EOF || len(buffer) == 0 {
 			break
