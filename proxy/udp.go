@@ -53,6 +53,7 @@ type UDPServer struct {
 func (udpServer *UDPServer) forwardRemote(udpConn *net.UDPConn, config config.Config) {
 	buf := make([]byte, BufferSize)
 	for {
+		udpConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		n, udpAddr, err := udpConn.ReadFromUDP(buf)
 		if err != nil || err == io.EOF || n == 0 {
 			break
@@ -116,7 +117,6 @@ func (udpServer *UDPServer) forwardRemote(udpConn *net.UDPConn, config config.Co
 			if wsConn == nil {
 				break
 			}
-			wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 			udpServer.wsConnMap.Store(dstAddr.String(), wsConn)
 			go udpServer.forwardClient(wsConn, udpConn, dstAddr)
 		}
@@ -130,6 +130,7 @@ func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, udpConn *net.U
 	defer wsConn.Close()
 	bufCopy := make([]byte, BufferSize)
 	for {
+		wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		_, buffer, err := wsConn.ReadMessage()
 		if err != nil || err == io.EOF || len(buffer) == 0 {
 			break
