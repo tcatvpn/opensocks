@@ -17,7 +17,7 @@ import (
 
 func UDPProxy(tcpConn net.Conn, config config.Config) {
 	defer tcpConn.Close()
-	//bind udp local server
+	//bind local udp server
 	localTCPAddr, _ := net.ResolveTCPAddr("tcp", tcpConn.LocalAddr().String())
 	localUDPAddr := fmt.Sprintf("%s:%d", localTCPAddr.IP.String(), 0)
 	udpAddr, _ := net.ResolveUDPAddr("udp", localUDPAddr)
@@ -27,27 +27,27 @@ func UDPProxy(tcpConn net.Conn, config config.Config) {
 		return
 	}
 	defer udpConn.Close()
-	bindUDPAddr, _ := net.ResolveUDPAddr("udp", udpConn.LocalAddr().String())
-	log.Printf("[udp] bind addr %v %v", bindUDPAddr.IP.To4().String(), bindUDPAddr.Port)
+	bindAddr, _ := net.ResolveUDPAddr("udp", udpConn.LocalAddr().String())
+	log.Printf("[udp] bind addr %v %v", bindAddr.IP.To4().String(), bindAddr.Port)
 
-	//reply to client
+	//response to client
 	response := []byte{Socks5Version, SuccessReply, 0x00, 0x01}
 	buffer := bytes.NewBuffer(response)
-	binary.Write(buffer, binary.BigEndian, bindUDPAddr.IP.To4())
-	binary.Write(buffer, binary.BigEndian, uint16(bindUDPAddr.Port))
+	binary.Write(buffer, binary.BigEndian, bindAddr.IP.To4())
+	binary.Write(buffer, binary.BigEndian, uint16(bindAddr.Port))
 	tcpConn.Write(buffer.Bytes())
 
 	done := make(chan bool, 0)
 	go keepUDPAlive(tcpConn.(*net.TCPConn), done)
 	go forwardUDP(udpConn, config)
 	<-done
-	log.Printf("[udp] proxy has done, addr %v %v", bindUDPAddr.IP.To4().String(), bindUDPAddr.Port)
+	log.Printf("[udp] proxy has done, addr %v %v", bindAddr.IP.To4().String(), bindAddr.Port)
 }
 
 type UDPServer struct {
-	clientUDPAddr *net.UDPAddr
-	dstAddrMap    sync.Map
-	wsConnMap     sync.Map
+	clientAddr   *net.UDPAddr
+	dstAddrCache sync.Map
+	wsConnCache  sync.Map
 }
 
 func (udpServer *UDPServer) forwardRemote(udpConn *net.UDPConn, config config.Config) {
@@ -58,8 +58,8 @@ func (udpServer *UDPServer) forwardRemote(udpConn *net.UDPConn, config config.Co
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		if udpServer.clientUDPAddr == nil {
-			udpServer.clientUDPAddr = udpAddr
+		if udpServer.clientAddr == nil {
+			udpServer.clientAddr = udpAddr
 		}
 		b := buf[:n]
 		/*
@@ -81,7 +81,7 @@ func (udpServer *UDPServer) forwardRemote(udpConn *net.UDPConn, config config.Co
 				IP:   net.IPv4(b[4], b[5], b[6], b[7]),
 				Port: int(b[8])<<8 | int(b[9]),
 			}
-			udpServer.dstAddrMap.LoadOrStore(dstAddr.String(), string(b[0:10]))
+			udpServer.dstAddrCache.LoadOrStore(dstAddr.String(), string(b[0:10]))
 			data = b[10:]
 		case FqdnAddress:
 			domainLength := int(b[4])
@@ -95,7 +95,7 @@ func (udpServer *UDPServer) forwardRemote(udpConn *net.UDPConn, config config.Co
 				IP:   ipAddr.IP,
 				Port: int(b[5+domainLength])<<8 | int(b[6+domainLength]),
 			}
-			udpServer.dstAddrMap.LoadOrStore(dstAddr.String(), string(b[0:7+domainLength]))
+			udpServer.dstAddrCache.LoadOrStore(dstAddr.String(), string(b[0:7+domainLength]))
 			data = b[7+domainLength:]
 		case Ipv6Address:
 			{
@@ -103,21 +103,21 @@ func (udpServer *UDPServer) forwardRemote(udpConn *net.UDPConn, config config.Co
 					IP:   net.IP(b[4:19]),
 					Port: int(b[20])<<8 | int(b[21]),
 				}
-				udpServer.dstAddrMap.LoadOrStore(dstAddr.String(), string(b[0:22]))
+				udpServer.dstAddrCache.LoadOrStore(dstAddr.String(), string(b[0:22]))
 				data = b[22:]
 			}
 		default:
 			continue
 		}
 		var wsConn *websocket.Conn
-		if value, ok := udpServer.wsConnMap.Load(dstAddr.String()); ok {
+		if value, ok := udpServer.wsConnCache.Load(dstAddr.String()); ok {
 			wsConn = value.(*websocket.Conn)
 		} else {
 			wsConn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), config)
 			if wsConn == nil {
 				break
 			}
-			udpServer.wsConnMap.Store(dstAddr.String(), wsConn)
+			udpServer.wsConnCache.Store(dstAddr.String(), wsConn)
 			go udpServer.forwardClient(wsConn, udpConn, dstAddr)
 		}
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
@@ -135,14 +135,14 @@ func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, udpConn *net.U
 		if err != nil || err == io.EOF || len(buffer) == 0 {
 			break
 		}
-		if header, ok := udpServer.dstAddrMap.Load(dstAddr.String()); ok {
+		if header, ok := udpServer.dstAddrCache.Load(dstAddr.String()); ok {
 			head := []byte(header.(string))
 			headLength := len(head)
 			copy(bufCopy[0:], head[0:headLength])
 			copy(bufCopy[headLength:], buffer[0:])
 			data := bufCopy[0 : headLength+len(buffer)]
-			log.Printf("[udp] remote to client %v", udpServer.clientUDPAddr)
-			udpConn.WriteToUDP(data, udpServer.clientUDPAddr)
+			log.Printf("[udp] remote to client %v", udpServer.clientAddr)
+			udpConn.WriteToUDP(data, udpServer.clientAddr)
 		}
 	}
 	log.Printf("[udp] forward client done")
