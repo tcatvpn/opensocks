@@ -65,14 +65,3 @@ func ForwardClient(wsConn *websocket.Conn, conn net.Conn) {
 		conn.Write(buffer[:])
 	}
 }
-
-func Response(conn net.Conn, rep byte) {
-	/**
-	  +----+-----+-------+------+----------+----------+
-	  |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
-	  +----+-----+-------+------+----------+----------+
-	  | 1  |  1  | X'00' |  1   | Variable |    2     |
-	  +----+-----+-------+------+----------+----------+
-	*/
-	conn.Write([]byte{Socks5Version, rep, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
-}
