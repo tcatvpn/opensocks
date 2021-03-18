@@ -56,12 +56,12 @@ func (udpServer *UDPServer) forwardRemote() {
 	buf := make([]byte, BufferSize)
 	for {
 		udpServer.serverConn.SetReadDeadline(time.Now().Add(60 * time.Second))
-		n, udpAddr, err := udpServer.serverConn.ReadFromUDP(buf)
+		n, clientAddr, err := udpServer.serverConn.ReadFromUDP(buf)
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
 		if udpServer.clientAddr == nil {
-			udpServer.clientAddr = udpAddr
+			udpServer.clientAddr = clientAddr
 		}
 		b := buf[:n]
 		/*
@@ -130,7 +130,6 @@ func (udpServer *UDPServer) forwardRemote() {
 
 func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, dstAddr *net.UDPAddr) {
 	defer wsConn.Close()
-	bufCopy := make([]byte, BufferSize)
 	for {
 		wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		_, buffer, err := wsConn.ReadMessage()
@@ -138,13 +137,11 @@ func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, dstAddr *net.U
 			break
 		}
 		if header, ok := udpServer.dstAddrCache.Load(dstAddr.String()); ok {
-			head := []byte(header.(string))
-			headLength := len(head)
-			copy(bufCopy[0:], head[0:headLength])
-			copy(bufCopy[headLength:], buffer[0:])
-			data := bufCopy[0 : headLength+len(buffer)]
+			var data bytes.Buffer
+			data.Write([]byte(header.(string)))
+			data.Write(buffer)
 			log.Printf("[udp] remote to client %v", udpServer.clientAddr)
-			udpServer.serverConn.WriteToUDP(data, udpServer.clientAddr)
+			udpServer.serverConn.WriteToUDP(data.Bytes(), udpServer.clientAddr)
 		}
 	}
 	log.Printf("[udp] forward client done")
