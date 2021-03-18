@@ -4,11 +4,9 @@ import (
 	"io"
 	"log"
 	"net"
-	"strconv"
 
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/proxy"
-	"github.com/net-byte/opensocks/utils"
 )
 
 //Start starts server
@@ -35,9 +33,11 @@ func connHandler(conn net.Conn, config config.Config) {
 		return
 	}
 	b := buf[0:n]
-	if !checkVersionAndAuth(conn, b) {
+	if !checkVersion(conn, b) {
 		return
 	}
+	//no auth
+	proxy.ResponseNoAuth(conn)
 	//read the cmd
 	n, err = conn.Read(buf[0:])
 	if err != nil || err == io.EOF {
@@ -50,13 +50,7 @@ func connHandler(conn net.Conn, config config.Config) {
 
 	switch b[1] {
 	case proxy.ConnectCommand:
-		//read the addr
-		host, port, addrType := getAddr(conn, b)
-		if config.Bypass && utils.IsPrivateIP(net.ParseIP(host)) {
-			proxy.DirectProxy(conn, host, port, config)
-			return
-		}
-		proxy.TCPProxy(conn, addrType, host, port, config)
+		proxy.TCPProxy(conn, config, b)
 		return
 	case proxy.AssociateCommand:
 		proxy.UDPProxy(conn, config)
@@ -69,20 +63,10 @@ func connHandler(conn net.Conn, config config.Config) {
 
 }
 
-func checkVersionAndAuth(conn net.Conn, b []byte) bool {
-	// Only socks5
+func checkVersion(conn net.Conn, b []byte) bool {
 	if b[0] != proxy.Socks5Version {
 		return false
 	}
-	// No auth
-	/**
-	  +----+--------+
-	  |VER | METHOD |
-	  +----+--------+
-	  | 1  |   1    |
-	  +----+--------+
-	*/
-	conn.Write([]byte{proxy.Socks5Version, proxy.NoAuth})
 	return true
 }
 
@@ -98,30 +82,4 @@ func checkCmd(conn net.Conn, b []byte) bool {
 	default:
 		return false
 	}
-}
-
-func getAddr(conn net.Conn, b []byte) (host string, port string, addrType uint8) {
-	/**
-	  +----+-----+-------+------+----------+----------+
-	  |VER | CMD |  RSV  | ATYP | DST.ADDR | DST.PORT |
-	  +----+-----+-------+------+----------+----------+
-	  | 1  |  1  | X'00' |  1   | Variable |    2     |
-	  +----+-----+-------+------+----------+----------+
-	*/
-	len := len(b)
-	switch b[3] {
-	case proxy.Ipv4Address:
-		host = net.IPv4(b[4], b[5], b[6], b[7]).String()
-		break
-	case proxy.FqdnAddress:
-		host = string(b[5 : len-2])
-		break
-	case proxy.Ipv6Address:
-		host = net.IP(b[4:19]).String()
-		break
-	default:
-		return "", "", b[3]
-	}
-	port = strconv.Itoa(int(b[len-2])<<8 | int(b[len-1]))
-	return host, port, b[3]
 }
