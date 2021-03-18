@@ -45,23 +45,17 @@ func Start(config config.Config) {
 		if err != nil {
 			return
 		}
-		// data format : host + "||" + port + "||" + username + "||" + password + "||" + network + "||" + UnixNano
-		addr := string(buffer)
-		s := strings.Split(addr, "||")
-		if len(s) < 5 {
+		var req proxy.RequestAddr
+		if req.UnmarshalBinary(buffer) != nil {
+			log.Println(err)
 			return
 		}
-		host, port, username, password := s[0], s[1], s[2], s[3]
-		if !(config.Username == username && config.Password == password) {
-			log.Println("Error username or password !")
+		if config.Username != req.Username || config.Password != req.Password {
+			log.Printf("error username %s,password %s", req.Username, req.Password)
 			return
-		}
-		network := "tcp"
-		if s[4] == "tcp" || s[4] == "udp" {
-			network = s[4]
 		}
 		// Connect remote server
-		conn, err := net.DialTimeout(network, net.JoinHostPort(host, port), 60*time.Second)
+		conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), 60*time.Second)
 		if err != nil {
 			log.Println(err)
 			return

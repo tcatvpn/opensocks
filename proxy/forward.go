@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"bytes"
 	"io"
 	"log"
 	"net"
@@ -24,20 +23,19 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 		log.Println(err)
 		return nil
 	}
-	// Send host addr to proxy server side
-	var data bytes.Buffer
-	data.WriteString(host)
-	data.WriteString("||")
-	data.WriteString(port)
-	data.WriteString("||")
-	data.WriteString(config.Username)
-	data.WriteString("||")
-	data.WriteString(config.Password)
-	data.WriteString("||")
-	data.WriteString(network)
-	data.WriteString("||")
-	data.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
-	c.WriteMessage(websocket.BinaryMessage, data.Bytes())
+	req := &RequestAddr{}
+	req.Network = network
+	req.Host = host
+	req.Port = port
+	req.Username = config.Username
+	req.Password = config.Password
+	req.Timestamp = strconv.FormatInt(time.Now().UnixNano(), 10)
+	data, err := req.MarshalBinary()
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	c.WriteMessage(websocket.BinaryMessage, data)
 	return c
 }
 
