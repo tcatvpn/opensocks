@@ -46,15 +46,17 @@ func UDPProxy(tcpConn net.Conn, config config.Config) {
 
 type UDPServer struct {
 	clientAddr   *net.UDPAddr
+	serverConn   *net.UDPConn
 	dstAddrCache sync.Map
 	wsConnCache  sync.Map
+	config       config.Config
 }
 
-func (udpServer *UDPServer) forwardRemote(udpConn *net.UDPConn, config config.Config) {
+func (udpServer *UDPServer) forwardRemote() {
 	buf := make([]byte, BufferSize)
 	for {
-		udpConn.SetReadDeadline(time.Now().Add(60 * time.Second))
-		n, udpAddr, err := udpConn.ReadFromUDP(buf)
+		udpServer.serverConn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		n, udpAddr, err := udpServer.serverConn.ReadFromUDP(buf)
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
@@ -113,12 +115,12 @@ func (udpServer *UDPServer) forwardRemote(udpConn *net.UDPConn, config config.Co
 		if value, ok := udpServer.wsConnCache.Load(dstAddr.String()); ok {
 			wsConn = value.(*websocket.Conn)
 		} else {
-			wsConn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), config)
+			wsConn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), udpServer.config)
 			if wsConn == nil {
 				break
 			}
 			udpServer.wsConnCache.Store(dstAddr.String(), wsConn)
-			go udpServer.forwardClient(wsConn, udpConn, dstAddr)
+			go udpServer.forwardClient(wsConn, dstAddr)
 		}
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
 		log.Printf("[udp] client to remote %v:%v", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port))
@@ -126,7 +128,7 @@ func (udpServer *UDPServer) forwardRemote(udpConn *net.UDPConn, config config.Co
 	log.Printf("[udp] forward remote done")
 }
 
-func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, udpConn *net.UDPConn, dstAddr *net.UDPAddr) {
+func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, dstAddr *net.UDPAddr) {
 	defer wsConn.Close()
 	bufCopy := make([]byte, BufferSize)
 	for {
@@ -142,7 +144,7 @@ func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, udpConn *net.U
 			copy(bufCopy[headLength:], buffer[0:])
 			data := bufCopy[0 : headLength+len(buffer)]
 			log.Printf("[udp] remote to client %v", udpServer.clientAddr)
-			udpConn.WriteToUDP(data, udpServer.clientAddr)
+			udpServer.serverConn.WriteToUDP(data, udpServer.clientAddr)
 		}
 	}
 	log.Printf("[udp] forward client done")
@@ -161,6 +163,6 @@ func keepUDPAlive(tcpConn *net.TCPConn, done chan<- bool) {
 }
 
 func forwardUDP(udpConn *net.UDPConn, config config.Config) {
-	udpServer := &UDPServer{}
-	udpServer.forwardRemote(udpConn, config)
+	udpServer := &UDPServer{serverConn: udpConn, config: config}
+	udpServer.forwardRemote()
 }
