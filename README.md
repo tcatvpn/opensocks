@@ -1,6 +1,6 @@
-# opensocks
+# OpenSocks
 
-Socks5(tcp/udp) over websocket,it helps you break the wall and see the world.
+OpenSocks is a socks5 server over websocket,it helps you break the wall and see the world.
 
 ![image](https://img.shields.io/badge/License-MIT-orange)
 ![image](https://img.shields.io/badge/License-Anti--996-red)
@@ -53,7 +53,7 @@ docker run -d --restart=always  --network=host --name opensocks-client netbyte/o
 docker run  -d --restart=always --net=host --name opensocks-server netbyte/opensocks -S
 ```
 
-### Run caddy for reverse proxy server
+### Run caddy for reverse proxy
 ```
 docker run -d --restart=always --network=host -v /data/caddy/Caddyfile:/etc/Caddyfile -v /data/caddy/.caddy:/root/.caddy -e ACME_AGREE=true --name caddy abiosoft/caddy
 ```
