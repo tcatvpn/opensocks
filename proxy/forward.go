@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/net-byte/opensocks/config"
+	"github.com/net-byte/opensocks/utils"
 )
 
 func ConnectWS(network string, host string, port string, config config.Config) *websocket.Conn {
@@ -17,7 +18,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 	if config.Wss {
 		scheme = "wss"
 	}
-	u := url.URL{Scheme: scheme, Host: config.ServerAddr, Path: "/opensocks"}
+	u := url.URL{Scheme: scheme, Host: config.ServerAddr, Path: WSPath}
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Printf("[client] websocket dial error:%v", err)
@@ -35,11 +36,12 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 		log.Printf("[client] MarshalBinary error:%v", err)
 		return nil
 	}
+	utils.Encrypt(&data, config.Key)
 	c.WriteMessage(websocket.BinaryMessage, data)
 	return c
 }
 
-func ForwardRemote(wsConn *websocket.Conn, conn net.Conn) {
+func ForwardRemote(wsConn *websocket.Conn, conn net.Conn, config config.Config) {
 	defer wsConn.Close()
 	defer conn.Close()
 	buffer := make([]byte, BufferSize)
@@ -49,11 +51,13 @@ func ForwardRemote(wsConn *websocket.Conn, conn net.Conn) {
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		wsConn.WriteMessage(websocket.BinaryMessage, buffer[:n])
+		b := buffer[:n]
+		utils.Encrypt(&b, config.Key)
+		wsConn.WriteMessage(websocket.BinaryMessage, b)
 	}
 }
 
-func ForwardClient(wsConn *websocket.Conn, conn net.Conn) {
+func ForwardClient(wsConn *websocket.Conn, conn net.Conn, config config.Config) {
 	defer wsConn.Close()
 	defer conn.Close()
 	for {
@@ -62,6 +66,7 @@ func ForwardClient(wsConn *websocket.Conn, conn net.Conn) {
 		if err != nil || err == io.EOF || len(buffer) == 0 {
 			break
 		}
+		utils.Decrypt(&buffer, config.Key)
 		conn.Write(buffer[:])
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/proxy"
+	"github.com/net-byte/opensocks/utils"
 )
 
 var upgrader = websocket.Upgrader{
@@ -26,6 +27,7 @@ var upgrader = websocket.Upgrader{
 
 // Start starts server
 func Start(config config.Config) {
+	config.Key = utils.CreateHash(config.Username + config.Password)
 	var rLimit syscall.Rlimit
 	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
 		log.Panicf("[server] Getrlimit error:%v", err)
@@ -36,7 +38,7 @@ func Start(config config.Config) {
 	}
 	log.Printf("opensocks server started on %s", config.ServerAddr)
 
-	http.HandleFunc("/opensocks", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(proxy.WSPath, func(w http.ResponseWriter, r *http.Request) {
 		wsConn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
@@ -45,6 +47,7 @@ func Start(config config.Config) {
 		if err != nil {
 			return
 		}
+		utils.Decrypt(&buffer, config.Key)
 		var req proxy.RequestAddr
 		if req.UnmarshalBinary(buffer) != nil {
 			log.Printf("[server] UnmarshalBinary error:%v", err)
@@ -61,8 +64,8 @@ func Start(config config.Config) {
 			return
 		}
 		// Forward data
-		go proxy.ForwardClient(wsConn, conn)
-		go proxy.ForwardRemote(wsConn, conn)
+		go proxy.ForwardClient(wsConn, conn, config)
+		go proxy.ForwardRemote(wsConn, conn, config)
 
 	})
 

@@ -35,5 +35,6 @@ const (
 )
 
 const (
-	BufferSize int = 4 * 1024
+	BufferSize int    = 4 * 1024
+	WSPath     string = "/opensocks2021"
 )
