@@ -20,7 +20,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 	u := url.URL{Scheme: scheme, Host: config.ServerAddr, Path: "/opensocks"}
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Println(err)
+		log.Printf("[client] websocket dial error:%v", err)
 		return nil
 	}
 	req := &RequestAddr{}
@@ -32,7 +32,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 	req.Timestamp = strconv.FormatInt(time.Now().UnixNano(), 10)
 	data, err := req.MarshalBinary()
 	if err != nil {
-		log.Println(err)
+		log.Printf("[client] MarshalBinary error:%v", err)
 		return nil
 	}
 	c.WriteMessage(websocket.BinaryMessage, data)

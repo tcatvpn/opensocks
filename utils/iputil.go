@@ -20,7 +20,7 @@ func init() {
 	} {
 		_, block, err := net.ParseCIDR(cidr)
 		if err != nil {
-			log.Printf("parse error on %q: %v", cidr, err)
+			log.Printf("[util] parse error on %q: %v", cidr, err)
 		}
 		privateIPBlocks = append(privateIPBlocks, block)
 	}
