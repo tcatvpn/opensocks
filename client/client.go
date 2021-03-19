@@ -14,7 +14,7 @@ func Start(config config.Config) {
 	log.Printf("opensocks client started on %s", config.LocalAddr)
 	l, err := net.Listen("tcp", config.LocalAddr)
 	if err != nil {
-		log.Panic(err)
+		log.Panicf("[tcp] listen error:%v", err)
 	}
 	for {
 		conn, err := l.Accept()

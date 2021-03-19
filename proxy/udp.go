@@ -22,13 +22,11 @@ func UDPProxy(tcpConn net.Conn, config config.Config) {
 	udpAddr, _ := net.ResolveUDPAddr("udp", localUDPAddr)
 	udpConn, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
-		log.Println(err)
+		log.Printf("[udp] listen error:%v", err)
 		return
 	}
 	defer udpConn.Close()
 	bindAddr, _ := net.ResolveUDPAddr("udp", udpConn.LocalAddr().String())
-	log.Printf("[udp] bind addr %v %v", bindAddr.IP.To4().String(), bindAddr.Port)
-
 	//response to client
 	ResponseUDPAddr(tcpConn, bindAddr)
 	//forward udp
@@ -36,7 +34,6 @@ func UDPProxy(tcpConn net.Conn, config config.Config) {
 	go keepUDPAlive(tcpConn.(*net.TCPConn), done)
 	go forwardUDP(udpConn, config)
 	<-done
-	log.Printf("[udp] proxy has done, addr %v %v", bindAddr.IP.To4().String(), bindAddr.Port)
 }
 
 func keepUDPAlive(tcpConn *net.TCPConn, done chan<- bool) {
@@ -92,7 +89,6 @@ func (udpServer *UDPServer) forwardRemote() {
 			go udpServer.forwardClient(wsConn, dstAddr)
 		}
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
-		log.Printf("[udp] client to remote %v:%v", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port))
 	}
 }
 
@@ -108,7 +104,6 @@ func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, dstAddr *net.U
 			var data bytes.Buffer
 			data.Write([]byte(header.(string)))
 			data.Write(buffer)
-			log.Printf("[udp] remote to client %v", udpServer.clientAddr)
 			udpServer.serverConn.WriteToUDP(data.Bytes(), udpServer.clientAddr)
 		}
 	}
@@ -123,7 +118,7 @@ func (udpServer *UDPServer) getAddr(b []byte) (dstAddr *net.UDPAddr, data []byte
 	   +----+------+------+----------+----------+----------+
 	*/
 	if b[2] != 0x00 {
-		log.Printf("[udp] frag do not support")
+		log.Printf("[udp] frag %v do not support", b[2])
 		return nil, nil
 	}
 	switch b[3] {
@@ -139,7 +134,7 @@ func (udpServer *UDPServer) getAddr(b []byte) (dstAddr *net.UDPAddr, data []byte
 		domain := string(b[5 : 5+domainLength])
 		ipAddr, err := net.ResolveIPAddr("ip", domain)
 		if err != nil {
-			log.Printf("[udp] dns %s resolve error:%v", domain, err)
+			log.Printf("[udp] dns resolve %s error:%v", domain, err)
 			return nil, nil
 		}
 		dstAddr = &net.UDPAddr{

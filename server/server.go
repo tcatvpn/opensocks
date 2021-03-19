@@ -28,11 +28,11 @@ var upgrader = websocket.Upgrader{
 func Start(config config.Config) {
 	var rLimit syscall.Rlimit
 	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		log.Panic(err)
+		log.Panicf("[server] Getrlimit error:%v", err)
 	}
 	rLimit.Cur = rLimit.Max
 	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		log.Panic(err)
+		log.Panicf("[server] Setrlimit error:%v", err)
 	}
 	log.Printf("opensocks server started on %s", config.ServerAddr)
 
@@ -47,17 +47,17 @@ func Start(config config.Config) {
 		}
 		var req proxy.RequestAddr
 		if req.UnmarshalBinary(buffer) != nil {
-			log.Println(err)
+			log.Printf("[server] UnmarshalBinary error:%v", err)
 			return
 		}
 		if config.Username != req.Username || config.Password != req.Password {
-			log.Printf("error username %s,password %s", req.Username, req.Password)
+			log.Printf("[server] error username %s,password %s", req.Username, req.Password)
 			return
 		}
 		// Connect remote server
 		conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), 60*time.Second)
 		if err != nil {
-			log.Println(err)
+			log.Printf("[server] dial error:%v", err)
 			return
 		}
 		// Forward data
@@ -71,7 +71,7 @@ func Start(config config.Config) {
 		if "" == ip {
 			ip = strings.Split(req.RemoteAddr, ":")[0]
 		}
-		resp := fmt.Sprintf("Hello,%v \n", ip)
+		resp := fmt.Sprintf("Hello,%v !", ip)
 		io.WriteString(w, resp)
 	})
 
