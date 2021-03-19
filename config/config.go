@@ -8,4 +8,5 @@ type Config struct {
 	ServerMode bool
 	Wss        bool
 	Bypass     bool
+	Key        []byte
 }
