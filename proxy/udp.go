@@ -103,7 +103,7 @@ func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, dstAddr *net.U
 			break
 		}
 		if header, ok := udpServer.dstAddrCache.Load(dstAddr.String()); ok {
-			utils.Encrypt(&buffer, udpServer.config.Key)
+			utils.Decrypt(&buffer, udpServer.config.Key)
 			var data bytes.Buffer
 			data.Write([]byte(header.(string)))
 			data.Write(buffer)
