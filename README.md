@@ -7,15 +7,15 @@ OpenSocks is a socks5 server over websocket,it helps you break the wall and see 
 
 # Features
 
-* "No Auth" mode
 * Support for the CONNECT command
 * Support for the ASSOCIATE command
 * Support nginx/caddy/cloudflare cdn for reverse proxy
 * Websocket for the transport layer
 
-# Architecture
+# Flow chart
+
 ```
-App<----->opensocks-client<---wss--->ningx/caddy/cdn reverse proxy<----->opensocks-server<----->real server
+Apps--->opensocks-client--->reverse proxy--->opensocks-server--->real server
 ```
 
 # Usage
@@ -37,25 +37,28 @@ Usage of ./opensocks:
   -bypass
     	bypass private ip (default true)
 
-
 ```
 
 ## Docker
 
-
 ### Run client
 ```
-docker run -d --restart=always  --network=host --name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:443
+docker run -d --restart=always  --network=host \
+--name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:443
 ```
 
 ### Run server
 ```
-docker run  -d --restart=always --net=host --name opensocks-server netbyte/opensocks -S
+docker run  -d --restart=always --net=host \
+--name opensocks-server netbyte/opensocks -S
 ```
 
 ### Run caddy for reverse proxy
 ```
-docker run -d --restart=always --network=host -v /data/caddy/Caddyfile:/etc/Caddyfile -v /data/caddy/.caddy:/root/.caddy -e ACME_AGREE=true --name caddy abiosoft/caddy
+docker run -d --restart=always --network=host \
+-v /data/caddy/Caddyfile:/etc/Caddyfile \
+-v /data/caddy/.caddy:/root/.caddy \
+-e ACME_AGREE=true --name caddy abiosoft/caddy
 ```
 
 ### Config Caddyfile
