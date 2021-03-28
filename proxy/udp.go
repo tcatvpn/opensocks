@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/net-byte/opensocks/config"
+	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/utils"
 )
 
@@ -91,6 +92,7 @@ func (udpServer *UDPServer) forwardRemote() {
 		}
 		utils.Encrypt(&data, udpServer.config.Key)
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
+		counter.IncrWriteByte(n)
 	}
 }
 
@@ -99,7 +101,8 @@ func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, dstAddr *net.U
 	for {
 		wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		_, buffer, err := wsConn.ReadMessage()
-		if err != nil || err == io.EOF || len(buffer) == 0 {
+		n := len(buffer)
+		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
 		if header, ok := udpServer.dstAddrCache.Load(dstAddr.String()); ok {
@@ -108,6 +111,7 @@ func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, dstAddr *net.U
 			data.Write([]byte(header.(string)))
 			data.Write(buffer)
 			udpServer.serverConn.WriteToUDP(data.Bytes(), udpServer.clientAddr)
+			counter.IncrReadByte(n)
 		}
 	}
 }

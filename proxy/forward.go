@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/net-byte/opensocks/config"
+	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/utils"
 )
 
@@ -54,6 +55,7 @@ func ForwardRemote(wsConn *websocket.Conn, conn net.Conn, config config.Config) 
 		b := buffer[:n]
 		utils.Encrypt(&b, config.Key)
 		wsConn.WriteMessage(websocket.BinaryMessage, b)
+		counter.IncrWriteByte(n)
 	}
 }
 
@@ -63,10 +65,12 @@ func ForwardClient(wsConn *websocket.Conn, conn net.Conn, config config.Config) 
 	for {
 		wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		_, buffer, err := wsConn.ReadMessage()
-		if err != nil || err == io.EOF || len(buffer) == 0 {
+		n := len(buffer)
+		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
 		utils.Decrypt(&buffer, config.Key)
 		conn.Write(buffer[:])
+		counter.IncrReadByte(n)
 	}
 }
