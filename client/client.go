@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/net-byte/opensocks/common/cipher"
+	"github.com/net-byte/opensocks/common/constant"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/proxy"
 )
@@ -28,7 +29,7 @@ func Start(config config.Config) {
 }
 
 func connHandler(conn net.Conn, config config.Config) {
-	buf := make([]byte, proxy.BufferSize)
+	buf := make([]byte, constant.BufferSize)
 	//read the version
 	n, err := conn.Read(buf[0:])
 	if err != nil || err == io.EOF {
@@ -51,22 +52,21 @@ func connHandler(conn net.Conn, config config.Config) {
 	}
 
 	switch b[1] {
-	case proxy.ConnectCommand:
+	case constant.ConnectCommand:
 		proxy.TCPProxy(conn, config, b)
 		return
-	case proxy.AssociateCommand:
+	case constant.AssociateCommand:
 		proxy.UDPProxy(conn, config)
 		return
-	case proxy.BindCommand:
+	case constant.BindCommand:
 		return
 	default:
 		return
 	}
-
 }
 
 func checkVersion(conn net.Conn, b []byte) bool {
-	if b[0] != proxy.Socks5Version {
+	if b[0] != constant.Socks5Version {
 		return false
 	}
 	return true
@@ -74,12 +74,12 @@ func checkVersion(conn net.Conn, b []byte) bool {
 
 func checkCmd(conn net.Conn, b []byte) bool {
 	switch b[1] {
-	case proxy.ConnectCommand:
+	case constant.ConnectCommand:
 		return true
-	case proxy.AssociateCommand:
+	case constant.AssociateCommand:
 		return true
-	case proxy.BindCommand:
-		proxy.Response(conn, proxy.CommandNotSupported)
+	case constant.BindCommand:
+		proxy.Response(conn, constant.CommandNotSupported)
 		return false
 	default:
 		return false

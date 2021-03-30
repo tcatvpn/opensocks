@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/net-byte/opensocks/common/cipher"
+	"github.com/net-byte/opensocks/common/constant"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 )
@@ -19,7 +20,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 	if config.Wss {
 		scheme = "wss"
 	}
-	u := url.URL{Scheme: scheme, Host: config.ServerAddr, Path: WSPath}
+	u := url.URL{Scheme: scheme, Host: config.ServerAddr, Path: constant.WSPath}
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Printf("[client] websocket dial error:%v", err)
@@ -45,7 +46,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 func ForwardRemote(wsConn *websocket.Conn, conn net.Conn, config config.Config) {
 	defer wsConn.Close()
 	defer conn.Close()
-	buffer := make([]byte, BufferSize)
+	buffer := make([]byte, constant.BufferSize)
 	for {
 		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		n, err := conn.Read(buffer)
