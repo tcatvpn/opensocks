@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/net-byte/opensocks/common"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
-	"github.com/net-byte/opensocks/utils"
 )
 
 func UDPProxy(tcpConn net.Conn, config config.Config) {
@@ -90,7 +90,7 @@ func (udpServer *UDPServer) forwardRemote() {
 			udpServer.wsConnCache.Store(dstAddr.String(), wsConn)
 			go udpServer.forwardClient(wsConn, dstAddr)
 		}
-		utils.Encrypt(&data, udpServer.config.Key)
+		common.Encrypt(&data, udpServer.config.Key)
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
 		counter.IncrWriteByte(n)
 	}
@@ -106,7 +106,7 @@ func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, dstAddr *net.U
 			break
 		}
 		if header, ok := udpServer.dstAddrCache.Load(dstAddr.String()); ok {
-			utils.Decrypt(&buffer, udpServer.config.Key)
+			common.Decrypt(&buffer, udpServer.config.Key)
 			var data bytes.Buffer
 			data.Write([]byte(header.(string)))
 			data.Write(buffer)
