@@ -29,7 +29,6 @@ var upgrader = websocket.Upgrader{
 // Start starts server
 func Start(config config.Config) {
 	osutil.SetSysMaxLimit()
-	config.Key = cipher.CreateHash(config.Username + config.Password)
 	log.Printf("opensocks server started on %s", config.ServerAddr)
 	http.HandleFunc(constant.WSPath, func(w http.ResponseWriter, r *http.Request) {
 		wsConn, err := upgrader.Upgrade(w, r, nil)

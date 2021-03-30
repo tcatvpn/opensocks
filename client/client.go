@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 
-	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/constant"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/proxy"
@@ -13,7 +12,6 @@ import (
 
 //Start starts server
 func Start(config config.Config) {
-	config.Key = cipher.CreateHash(config.Username + config.Password)
 	log.Printf("opensocks client started on %s", config.LocalAddr)
 	l, err := net.Listen("tcp", config.LocalAddr)
 	if err != nil {
