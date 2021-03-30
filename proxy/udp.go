@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/net-byte/opensocks/common/cipher"
+	"github.com/net-byte/opensocks/common/constant"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 )
@@ -40,7 +41,7 @@ func UDPProxy(tcpConn net.Conn, config config.Config) {
 
 func keepUDPAlive(tcpConn *net.TCPConn, done chan<- bool) {
 	tcpConn.SetKeepAlive(true)
-	buf := make([]byte, BufferSize)
+	buf := make([]byte, constant.BufferSize)
 	for {
 		_, err := tcpConn.Read(buf[0:])
 		if err != nil {
@@ -64,7 +65,7 @@ type UDPServer struct {
 }
 
 func (udpServer *UDPServer) forwardRemote() {
-	buf := make([]byte, BufferSize)
+	buf := make([]byte, constant.BufferSize)
 	for {
 		udpServer.serverConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		n, clientAddr, err := udpServer.serverConn.ReadFromUDP(buf)
@@ -129,14 +130,14 @@ func (udpServer *UDPServer) getAddr(b []byte) (dstAddr *net.UDPAddr, data []byte
 		return nil, nil
 	}
 	switch b[3] {
-	case Ipv4Address:
+	case constant.Ipv4Address:
 		dstAddr = &net.UDPAddr{
 			IP:   net.IPv4(b[4], b[5], b[6], b[7]),
 			Port: int(b[8])<<8 | int(b[9]),
 		}
 		udpServer.dstAddrCache.LoadOrStore(dstAddr.String(), string(b[0:10]))
 		data = b[10:]
-	case FqdnAddress:
+	case constant.FqdnAddress:
 		domainLength := int(b[4])
 		domain := string(b[5 : 5+domainLength])
 		ipAddr, err := net.ResolveIPAddr("ip", domain)
@@ -150,7 +151,7 @@ func (udpServer *UDPServer) getAddr(b []byte) (dstAddr *net.UDPAddr, data []byte
 		}
 		udpServer.dstAddrCache.LoadOrStore(dstAddr.String(), string(b[0:7+domainLength]))
 		data = b[7+domainLength:]
-	case Ipv6Address:
+	case constant.Ipv6Address:
 		{
 			dstAddr = &net.UDPAddr{
 				IP:   net.IP(b[4:19]),

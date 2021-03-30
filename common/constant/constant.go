@@ -1,4 +1,4 @@
-package proxy
+package constant
 
 const (
 	Socks5Version = uint8(5)

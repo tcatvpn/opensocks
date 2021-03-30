@@ -7,18 +7,19 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/net-byte/opensocks/common/cipher"
+	"github.com/net-byte/opensocks/common/constant"
+	"github.com/net-byte/opensocks/common/osutil"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/proxy"
 )
 
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:    proxy.BufferSize,
-	WriteBufferSize:   proxy.BufferSize,
+	ReadBufferSize:    constant.BufferSize,
+	WriteBufferSize:   constant.BufferSize,
 	EnableCompression: true,
 	CheckOrigin: func(r *http.Request) bool {
 		return true
@@ -27,18 +28,10 @@ var upgrader = websocket.Upgrader{
 
 // Start starts server
 func Start(config config.Config) {
+	osutil.SetSysMaxLimit()
 	config.Key = cipher.CreateHash(config.Username + config.Password)
-	var rLimit syscall.Rlimit
-	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		log.Panicf("[server] Getrlimit error:%v", err)
-	}
-	rLimit.Cur = rLimit.Max
-	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		log.Panicf("[server] Setrlimit error:%v", err)
-	}
 	log.Printf("opensocks server started on %s", config.ServerAddr)
-
-	http.HandleFunc(proxy.WSPath, func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(constant.WSPath, func(w http.ResponseWriter, r *http.Request) {
 		wsConn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return

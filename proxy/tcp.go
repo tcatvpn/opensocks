@@ -4,6 +4,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/net-byte/opensocks/common/constant"
 	"github.com/net-byte/opensocks/common/iputil"
 	"github.com/net-byte/opensocks/config"
 )
@@ -20,11 +21,11 @@ func TCPProxy(conn net.Conn, config config.Config, data []byte) {
 
 	wsConn := ConnectWS("tcp", host, port, config)
 	if wsConn == nil {
-		Response(conn, ConnectionRefused)
+		Response(conn, constant.ConnectionRefused)
 		return
 	}
 
-	Response(conn, SuccessReply)
+	Response(conn, constant.SuccessReply)
 	go ForwardRemote(wsConn, conn, config)
 	go ForwardClient(wsConn, conn, config)
 
@@ -40,13 +41,13 @@ func getAddr(b []byte) (host string, port string) {
 	*/
 	len := len(b)
 	switch b[3] {
-	case Ipv4Address:
+	case constant.Ipv4Address:
 		host = net.IPv4(b[4], b[5], b[6], b[7]).String()
 		break
-	case FqdnAddress:
+	case constant.FqdnAddress:
 		host = string(b[5 : len-2])
 		break
-	case Ipv6Address:
+	case constant.Ipv6Address:
 		host = net.IP(b[4:19]).String()
 		break
 	default:

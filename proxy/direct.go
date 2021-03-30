@@ -6,17 +6,18 @@ import (
 	"net"
 	"time"
 
+	"github.com/net-byte/opensocks/common/constant"
 	"github.com/net-byte/opensocks/config"
 )
 
 func DirectProxy(conn net.Conn, host string, port string, config config.Config) {
 	remoteConn := connectTCP(host, port, config)
 	if remoteConn == nil {
-		Response(conn, ConnectionRefused)
+		Response(conn, constant.ConnectionRefused)
 		return
 	}
 
-	Response(conn, SuccessReply)
+	Response(conn, constant.SuccessReply)
 	go forward(remoteConn, conn)
 	go forward(conn, remoteConn)
 }
