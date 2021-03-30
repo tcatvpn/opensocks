@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/net-byte/opensocks/common"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
-	"github.com/net-byte/opensocks/utils"
 )
 
 func ConnectWS(network string, host string, port string, config config.Config) *websocket.Conn {
@@ -37,7 +37,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 		log.Printf("[client] MarshalBinary error:%v", err)
 		return nil
 	}
-	utils.Encrypt(&data, config.Key)
+	common.Encrypt(&data, config.Key)
 	c.WriteMessage(websocket.BinaryMessage, data)
 	return c
 }
@@ -53,7 +53,7 @@ func ForwardRemote(wsConn *websocket.Conn, conn net.Conn, config config.Config) 
 			break
 		}
 		b := buffer[:n]
-		utils.Encrypt(&b, config.Key)
+		common.Encrypt(&b, config.Key)
 		wsConn.WriteMessage(websocket.BinaryMessage, b)
 		counter.IncrWriteByte(n)
 	}
@@ -69,7 +69,7 @@ func ForwardClient(wsConn *websocket.Conn, conn net.Conn, config config.Config) 
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		utils.Decrypt(&buffer, config.Key)
+		common.Decrypt(&buffer, config.Key)
 		conn.Write(buffer[:])
 		counter.IncrReadByte(n)
 	}

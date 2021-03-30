@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/net-byte/opensocks/common"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/proxy"
-	"github.com/net-byte/opensocks/utils"
 )
 
 var upgrader = websocket.Upgrader{
@@ -27,7 +27,7 @@ var upgrader = websocket.Upgrader{
 
 // Start starts server
 func Start(config config.Config) {
-	config.Key = utils.CreateHash(config.Username + config.Password)
+	config.Key = common.CreateHash(config.Username + config.Password)
 	var rLimit syscall.Rlimit
 	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
 		log.Panicf("[server] Getrlimit error:%v", err)
@@ -47,7 +47,7 @@ func Start(config config.Config) {
 		if err != nil {
 			return
 		}
-		utils.Decrypt(&buffer, config.Key)
+		common.Decrypt(&buffer, config.Key)
 		var req proxy.RequestAddr
 		if req.UnmarshalBinary(buffer) != nil {
 			log.Printf("[server] UnmarshalBinary error:%v", err)
