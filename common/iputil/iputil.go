@@ -1,4 +1,4 @@
-package common
+package iputil
 
 import (
 	"log"
