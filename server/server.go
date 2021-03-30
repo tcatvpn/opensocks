@@ -63,11 +63,11 @@ func Start(config config.Config) {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		ip := req.Header.Get("X-Forwarded-For")
+		ip := req.Header.Get("X-Real-IP")
 		if "" == ip {
 			ip = strings.Split(req.RemoteAddr, ":")[0]
 		}
-		resp := fmt.Sprintf("Hello,%v !", ip)
+		resp := fmt.Sprintf("Hello，世界！[ip] = {%v}", ip)
 		io.WriteString(w, resp)
 	})
 
