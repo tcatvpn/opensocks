@@ -98,7 +98,7 @@ func (udpServer *UDPServer) forwardRemote() {
 }
 
 func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, dstAddr *net.UDPAddr) {
-	defer wsConn.Close()
+	defer CloseWS(wsConn)
 	for {
 		wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		_, buffer, err := wsConn.ReadMessage()
