@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"net/url"
 	"strconv"
 	"time"
@@ -21,7 +22,9 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 		scheme = "wss"
 	}
 	u := url.URL{Scheme: scheme, Host: config.ServerAddr, Path: constant.WSPath}
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	header := make(http.Header)
+	header.Set("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), header)
 	if err != nil {
 		log.Printf("[client] websocket dial error:%v", err)
 		return nil
