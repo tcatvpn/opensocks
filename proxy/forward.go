@@ -46,8 +46,13 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 	return c
 }
 
+func CloseWS(wsConn *websocket.Conn) {
+	wsConn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second*5))
+	wsConn.Close()
+}
+
 func ForwardRemote(wsConn *websocket.Conn, conn net.Conn, config config.Config) {
-	defer wsConn.Close()
+	defer CloseWS(wsConn)
 	defer conn.Close()
 	buffer := make([]byte, constant.BufferSize)
 	for {
@@ -64,7 +69,7 @@ func ForwardRemote(wsConn *websocket.Conn, conn net.Conn, config config.Config) 
 }
 
 func ForwardClient(wsConn *websocket.Conn, conn net.Conn, config config.Config) {
-	defer wsConn.Close()
+	defer CloseWS(wsConn)
 	defer conn.Close()
 	for {
 		wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
