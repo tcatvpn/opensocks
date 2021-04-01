@@ -62,7 +62,7 @@ func Start(config config.Config) {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		ip := req.Header.Get("X-Real-IP")
+		ip := req.Header.Get("X-Forwarded-For")
 		if "" == ip {
 			ip = strings.Split(req.RemoteAddr, ":")[0]
 		}
