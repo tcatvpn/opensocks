@@ -42,7 +42,7 @@ func Start(config config.Config) {
 		cipher.Decrypt(&buffer, config.Key)
 		var req proxy.RequestAddr
 		if req.UnmarshalBinary(buffer) != nil {
-			log.Printf("[server] UnmarshalBinary error:%v", err)
+			log.Printf("[server] unmarshal binary error:%v", err)
 			return
 		}
 		if config.Username != req.Username || config.Password != req.Password {
@@ -66,7 +66,7 @@ func Start(config config.Config) {
 		if "" == ip {
 			ip = strings.Split(req.RemoteAddr, ":")[0]
 		}
-		resp := fmt.Sprintf("Hello，世界！[ip] = {%v}", ip)
+		resp := fmt.Sprintf("Hello，世界！\nIP = %v", ip)
 		io.WriteString(w, resp)
 	})
 

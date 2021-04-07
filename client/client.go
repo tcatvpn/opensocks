@@ -34,7 +34,7 @@ func connHandler(conn net.Conn, config config.Config) {
 		return
 	}
 	b := buf[0:n]
-	if !checkVersion(conn, b) {
+	if b[0] != constant.Socks5Version {
 		return
 	}
 	//no auth
@@ -45,10 +45,6 @@ func connHandler(conn net.Conn, config config.Config) {
 		return
 	}
 	b = buf[0:n]
-	if !checkCmd(conn, b) {
-		return
-	}
-
 	switch b[1] {
 	case constant.ConnectCommand:
 		proxy.TCPProxy(conn, config, b)
@@ -57,29 +53,10 @@ func connHandler(conn net.Conn, config config.Config) {
 		proxy.UDPProxy(conn, config)
 		return
 	case constant.BindCommand:
-		return
-	default:
-		return
-	}
-}
-
-func checkVersion(conn net.Conn, b []byte) bool {
-	if b[0] != constant.Socks5Version {
-		return false
-	}
-	return true
-}
-
-func checkCmd(conn net.Conn, b []byte) bool {
-	switch b[1] {
-	case constant.ConnectCommand:
-		return true
-	case constant.AssociateCommand:
-		return true
-	case constant.BindCommand:
 		proxy.Response(conn, constant.CommandNotSupported)
-		return false
+		return
 	default:
-		return false
+		proxy.Response(conn, constant.CommandNotSupported)
+		return
 	}
 }
