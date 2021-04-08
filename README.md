@@ -1,6 +1,6 @@
 # OpenSocks
 
-OpenSocks is a socks5 server over websocket,it helps you break the wall and see the world.
+OpenSocks is a socks5 proxy tool that helps you break the wall and see the world.
 
 ![image](https://img.shields.io/badge/License-MIT-orange)
 ![image](https://img.shields.io/badge/License-Anti--996-red)
@@ -9,35 +9,7 @@ OpenSocks is a socks5 server over websocket,it helps you break the wall and see 
 
 * Support for the CONNECT command
 * Support for the ASSOCIATE command
-* Support nginx/caddy/cloudflare cdn for reverse proxy
 * Websocket for the transport layer
-
-# Flow chart
-
-```
-Apps--->opensocks-client--->reverse proxy--->opensocks-server--->real server
-```
-
-# Usage
-## Cmd
-
-```
-Usage of ./opensocks:
-  -S	server mode
-  -l string
-    	local address (default "0.0.0.0:1080")
-  -p string
-    	password (default "pass@123456")
-  -s string
-    	server address (default "0.0.0.0:8081")
-  -u string
-    	username (default "admin")
-  -wss
-    	wss/ws scheme (default true)
-  -bypass
-    	bypass private ip (default true)
-
-```
 
 ## Docker
 
@@ -76,6 +48,12 @@ your.domain {
     }
 }
 ```
+
+## Cross-platform client
+[opensocks-gui](https://github.com/net-byte/opensocks-gui)
+
+## Deploy server to cloud
+[opensocks-cloud](https://github.com/net-byte/opensocks-cloud)
 
 ## License
 
