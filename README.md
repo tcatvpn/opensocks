@@ -11,21 +11,21 @@ OpenSocks is a socks5 proxy tool that helps you break the wall and see the world
 * Support for the ASSOCIATE command
 * Websocket for the transport layer
 
-## Docker
+# Docker
 
-### Run client
+## Run client
 ```
 docker run -d --restart=always  --network=host \
 --name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:443
 ```
 
-### Run server
+## Run server
 ```
 docker run  -d --restart=always --net=host \
 --name opensocks-server netbyte/opensocks -S
 ```
 
-### Run caddy for reverse proxy
+## Run caddy for reverse proxy
 ```
 docker run -d --restart=always --network=host \
 -v /data/caddy/Caddyfile:/etc/Caddyfile \
@@ -33,7 +33,7 @@ docker run -d --restart=always --network=host \
 -e ACME_AGREE=true --name caddy abiosoft/caddy
 ```
 
-### Config Caddyfile
+## Config Caddyfile
 ```
 your.domain {
     gzip
@@ -49,13 +49,13 @@ your.domain {
 }
 ```
 
-## Cross-platform client
+# Cross-platform client
 [opensocks-gui](https://github.com/net-byte/opensocks-gui)
 
-## Deploy server to cloud
+# Deploy server to cloud
 [opensocks-cloud](https://github.com/net-byte/opensocks-cloud)
 
-## License
+# License
 
 [The MIT License (MIT)](https://raw.githubusercontent.com/net-byte/opensocks/main/LICENSE)
 
