@@ -11,10 +11,12 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/inhies/go-bytesize"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/constant"
 	"github.com/net-byte/opensocks/common/osutil"
 	"github.com/net-byte/opensocks/config"
+	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/proxy"
 )
 
@@ -69,13 +71,27 @@ func Start(config config.Config) {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		resp := fmt.Sprintf("Hello，世界！")
+		io.WriteString(w, resp)
+	})
+
+	http.HandleFunc("/ip", func(w http.ResponseWriter, req *http.Request) {
 		ip := req.Header.Get("X-Forwarded-For")
 		if "" == ip {
 			ip = strings.Split(req.RemoteAddr, ":")[0]
 		}
-		resp := fmt.Sprintf("Hello，世界！\nIP = %v", ip)
+		resp := fmt.Sprintf("%v", ip)
+		io.WriteString(w, resp)
+	})
+
+	http.HandleFunc("/sys", func(w http.ResponseWriter, req *http.Request) {
+		resp := fmt.Sprintf("download %v upload %v", bytesize.New(float64(counter.TotalReadByte)).String(), bytesize.New(float64(counter.TotalWriteByte)).String())
 		io.WriteString(w, resp)
 	})
 
 	http.ListenAndServe(config.ServerAddr, nil)
+}
+
+func formatByteSize(size int64) string {
+	return bytesize.New(float64(size)).String()
 }
