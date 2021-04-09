@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,6 +44,12 @@ func Start(config config.Config) {
 		var req proxy.RequestAddr
 		if req.UnmarshalBinary(buffer) != nil {
 			log.Printf("[server] unmarshal binary error:%v", err)
+			return
+		}
+		log.Printf("[server] client request: %v", req)
+		reqTime, _ := strconv.ParseInt(req.Timestamp, 10, 64)
+		if time.Now().Unix()-reqTime > 30 {
+			log.Printf("[server] timestamp expired: %v", reqTime)
 			return
 		}
 		if config.Username != req.Username || config.Password != req.Password {
