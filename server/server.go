@@ -46,7 +46,7 @@ func Start(config config.Config) {
 			log.Printf("[server] unmarshal binary error:%v", err)
 			return
 		}
-		log.Printf("[server] client request: %v", req)
+		//log.Printf("[server] client request: %v", req)
 		reqTime, _ := strconv.ParseInt(req.Timestamp, 10, 64)
 		if time.Now().Unix()-reqTime > 30 {
 			log.Printf("[server] timestamp expired: %v", reqTime)
