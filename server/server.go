@@ -91,7 +91,3 @@ func Start(config config.Config) {
 
 	http.ListenAndServe(config.ServerAddr, nil)
 }
-
-func formatByteSize(size int64) string {
-	return bytesize.New(float64(size)).String()
-}
