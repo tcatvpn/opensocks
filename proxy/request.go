@@ -11,6 +11,7 @@ type RequestAddr struct {
 	Password  string
 	Network   string
 	Timestamp string
+	Random    string
 }
 
 // MarshalBinary

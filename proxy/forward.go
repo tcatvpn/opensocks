@@ -35,7 +35,8 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 	req.Port = port
 	req.Username = config.Username
 	req.Password = config.Password
-	req.Timestamp = strconv.FormatInt(time.Now().UnixNano(), 10)
+	req.Timestamp = strconv.FormatInt(time.Now().Unix(), 10)
+	req.Random = cipher.Random()
 	data, err := req.MarshalBinary()
 	if err != nil {
 		log.Printf("[client] marshal binary error:%v", err)
