@@ -1,6 +1,6 @@
 # OpenSocks
 
-OpenSocks is a socks5 proxy tool that helps you break the wall and see the world.
+OpenSocks is a net tool that helps you break the wall and see the world.
 
 [![Travis](https://travis-ci.com/net-byte/opensocks.svg?branch=main)](https://github.com/net-byte/opensocks)
 [![Go Report Card](https://goreportcard.com/badge/github.com/net-byte/opensocks)](https://goreportcard.com/report/github.com/net-byte/opensocks)
@@ -9,9 +9,9 @@ OpenSocks is a socks5 proxy tool that helps you break the wall and see the world
 
 # Features
 
-* Support for the CONNECT command
-* Support for the ASSOCIATE command
-* Websocket for the transport layer
+* Support SOCKS5 protocol implements CONNECT/ASSOCIATE command
+* Support websocket(wss/ws) for application layer
+* Support data encryption with ChaCha20-Poly1305
 
 # Docker
 
