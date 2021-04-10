@@ -12,6 +12,7 @@ import (
 
 //Start starts server
 func Start(config config.Config) {
+	config.Init()
 	log.Printf("opensocks client started on %s", config.LocalAddr)
 	l, err := net.Listen("tcp", config.LocalAddr)
 	if err != nil {

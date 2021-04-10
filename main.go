@@ -15,10 +15,10 @@ func main() {
 	flag.StringVar(&config.Username, "u", "admin", "username")
 	flag.StringVar(&config.Password, "p", "pass@123456", "password")
 	flag.BoolVar(&config.ServerMode, "S", false, "server mode")
-	flag.BoolVar(&config.Wss, "wss", true, "wss/ws scheme")
+	flag.BoolVar(&config.Wss, "wss", true, "scheme wss(true)/ws(false)")
 	flag.BoolVar(&config.Bypass, "bypass", true, "bypass private ip")
 	flag.Parse()
-	config.Init()
+
 	if config.ServerMode {
 		server.Start(config)
 	} else {
