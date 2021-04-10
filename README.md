@@ -18,38 +18,17 @@ OpenSocks is a net tool that helps you break the wall and see the world.
 ## Run client
 ```
 docker run -d --restart=always  --network=host \
---name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:443
+--name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:443 -l=:1080
 ```
 
 ## Run server
 ```
 docker run  -d --restart=always --net=host \
---name opensocks-server netbyte/opensocks -S
+--name opensocks-server netbyte/opensocks -S -s=:8080
 ```
 
-## Run caddy for reverse proxy
-```
-docker run -d --restart=always --network=host \
--v /data/caddy/Caddyfile:/etc/Caddyfile \
--v /data/caddy/.caddy:/root/.caddy \
--e ACME_AGREE=true --name caddy abiosoft/caddy
-```
-
-## Config Caddyfile
-```
-your.domain {
-    gzip
-    proxy / 0.0.0.0:8081 {
-        websocket
-        header_upstream -Origin
-        header_upstream Host {host}
-        header_upstream X-Real-IP {remote}
-        header_upstream X-Forwarded-For {remote}
-        header_upstream X-Forwarded-Port {server_port}
-        header_upstream X-Forwarded-Proto {scheme}
-    }
-}
-```
+## Reverse proxy
+Use nginx/caddy(443) to reverse proxy server(8080)
 
 # Cross-platform client
 [opensocks-gui](https://github.com/net-byte/opensocks-gui)
@@ -58,7 +37,6 @@ your.domain {
 [opensocks-cloud](https://github.com/net-byte/opensocks-cloud)
 
 # License
-
 [The MIT License (MIT)](https://raw.githubusercontent.com/net-byte/opensocks/main/LICENSE)
 
 
