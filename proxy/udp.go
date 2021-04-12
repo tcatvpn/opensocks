@@ -91,7 +91,7 @@ func (udpServer *UDPServer) forwardRemote() {
 			udpServer.wsConnCache.Store(dstAddr.String(), wsConn)
 			go udpServer.forwardClient(wsConn, dstAddr)
 		}
-		cipher.Encrypt(&data, udpServer.config.Key)
+		cipher.Encrypt(&data)
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
 		counter.IncrWriteByte(n)
 	}
@@ -107,7 +107,7 @@ func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, dstAddr *net.U
 			break
 		}
 		if header, ok := udpServer.dstAddrCache.Load(dstAddr.String()); ok {
-			cipher.Decrypt(&buffer, udpServer.config.Key)
+			cipher.Decrypt(&buffer)
 			var data bytes.Buffer
 			data.Write([]byte(header.(string)))
 			data.Write(buffer)

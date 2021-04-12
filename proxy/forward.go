@@ -33,8 +33,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 	req.Network = network
 	req.Host = host
 	req.Port = port
-	req.Username = config.Username
-	req.Password = config.Password
+	req.Key = config.Key
 	req.Timestamp = strconv.FormatInt(time.Now().Unix(), 10)
 	req.Random = cipher.Random()
 	data, err := req.MarshalBinary()
@@ -42,7 +41,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 		log.Printf("[client] marshal binary error:%v", err)
 		return nil
 	}
-	cipher.Encrypt(&data, config.Key)
+	cipher.Encrypt(&data)
 	c.WriteMessage(websocket.BinaryMessage, data)
 	return c
 }
@@ -63,7 +62,7 @@ func ForwardRemote(wsConn *websocket.Conn, conn net.Conn, config config.Config) 
 			break
 		}
 		b := buffer[:n]
-		cipher.Encrypt(&b, config.Key)
+		cipher.Encrypt(&b)
 		wsConn.WriteMessage(websocket.BinaryMessage, b)
 		counter.IncrWriteByte(n)
 	}
@@ -79,7 +78,7 @@ func ForwardClient(wsConn *websocket.Conn, conn net.Conn, config config.Config) 
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		cipher.Decrypt(&buffer, config.Key)
+		cipher.Decrypt(&buffer)
 		conn.Write(buffer[:])
 		counter.IncrReadByte(n)
 	}

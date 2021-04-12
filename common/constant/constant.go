@@ -36,5 +36,5 @@ const (
 
 const (
 	BufferSize int    = 4 * 1024
-	WSPath     string = "/opensocks2021"
+	WSPath     string = "/way-to-freedom"
 )

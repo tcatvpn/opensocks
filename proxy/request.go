@@ -7,8 +7,7 @@ import (
 type RequestAddr struct {
 	Host      string
 	Port      string
-	Username  string
-	Password  string
+	Key       string
 	Network   string
 	Timestamp string
 	Random    string
