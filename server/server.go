@@ -43,7 +43,7 @@ func Start(config config.Config) {
 		if err != nil {
 			return
 		}
-		cipher.Decrypt(&buffer, config.Key)
+		cipher.Decrypt(&buffer)
 		var req proxy.RequestAddr
 		if req.UnmarshalBinary(buffer) != nil {
 			log.Printf("[server] unmarshal binary error:%v", err)
@@ -55,8 +55,8 @@ func Start(config config.Config) {
 			log.Printf("[server] timestamp expired: %v", reqTime)
 			return
 		}
-		if config.Username != req.Username || config.Password != req.Password {
-			log.Printf("[server] error username %s,password %s", req.Username, req.Password)
+		if config.Key != req.Key {
+			log.Printf("[server] error key: %s", req.Key)
 			return
 		}
 		// Connect remote server
