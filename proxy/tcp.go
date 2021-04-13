@@ -26,8 +26,8 @@ func TCPProxy(conn net.Conn, config config.Config, data []byte) {
 	}
 
 	Response(conn, constant.SuccessReply)
-	go ForwardRemote(wsConn, conn, config)
-	go ForwardClient(wsConn, conn, config)
+	go ForwardRemote(wsConn, conn)
+	go ForwardClient(wsConn, conn)
 
 }
 

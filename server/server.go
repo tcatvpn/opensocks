@@ -66,8 +66,8 @@ func Start(config config.Config) {
 			return
 		}
 		// Forward data
-		go proxy.ForwardClient(wsConn, conn, config)
-		go proxy.ForwardRemote(wsConn, conn, config)
+		go proxy.ForwardClient(wsConn, conn)
+		go proxy.ForwardRemote(wsConn, conn)
 
 	})
 
