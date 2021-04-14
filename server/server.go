@@ -49,9 +49,8 @@ func Start(config config.Config) {
 			log.Printf("[server] unmarshal binary error:%v", err)
 			return
 		}
-		//log.Printf("[server] client request: %v", req)
 		reqTime, _ := strconv.ParseInt(req.Timestamp, 10, 64)
-		if time.Now().Unix()-reqTime > 30 {
+		if time.Now().Unix()-reqTime > int64(constant.Timeout) {
 			log.Printf("[server] timestamp expired: %v", reqTime)
 			return
 		}
@@ -59,26 +58,25 @@ func Start(config config.Config) {
 			log.Printf("[server] error key: %s", req.Key)
 			return
 		}
-		// Connect remote server
-		conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), 60*time.Second)
+		// connect remote server
+		conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(constant.Timeout)*time.Second)
 		if err != nil {
 			log.Printf("[server] dial error:%v", err)
 			return
 		}
-		// Forward data
+		// forward data
 		go proxy.ForwardClient(wsConn, conn)
 		go proxy.ForwardRemote(wsConn, conn)
 
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		resp := fmt.Sprintf("Hello，世界！")
-		io.WriteString(w, resp)
+		io.WriteString(w, "Hello，世界！")
 	})
 
 	http.HandleFunc("/ip", func(w http.ResponseWriter, req *http.Request) {
 		ip := req.Header.Get("X-Forwarded-For")
-		if "" == ip {
+		if ip == "" {
 			ip = strings.Split(req.RemoteAddr, ":")[0]
 		}
 		resp := fmt.Sprintf("%v", ip)
@@ -86,7 +84,7 @@ func Start(config config.Config) {
 	})
 
 	http.HandleFunc("/sys", func(w http.ResponseWriter, req *http.Request) {
-		resp := fmt.Sprintf("download %v upload %v", bytesize.New(float64(counter.TotalReadByte)).String(), bytesize.New(float64(counter.TotalWriteByte)).String())
+		resp := fmt.Sprintf("download %v upload %v", bytesize.New(float64(counter.TotalWriteByte)).String(), bytesize.New(float64(counter.TotalReadByte)).String())
 		io.WriteString(w, resp)
 	})
 

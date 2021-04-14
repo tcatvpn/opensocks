@@ -35,6 +35,8 @@ const (
 )
 
 const (
+	Timeout    int    = 60
 	BufferSize int    = 4 * 1024
 	WSPath     string = "/way-to-freedom"
+	UserAgent  string = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36"
 )
