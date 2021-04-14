@@ -43,13 +43,10 @@ func getAddr(b []byte) (host string, port string) {
 	switch b[3] {
 	case constant.Ipv4Address:
 		host = net.IPv4(b[4], b[5], b[6], b[7]).String()
-		break
 	case constant.FqdnAddress:
 		host = string(b[5 : len-2])
-		break
 	case constant.Ipv6Address:
 		host = net.IP(b[4:19]).String()
-		break
 	default:
 		return "", ""
 	}

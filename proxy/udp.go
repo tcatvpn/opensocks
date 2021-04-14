@@ -33,7 +33,7 @@ func UDPProxy(tcpConn net.Conn, config config.Config) {
 	//response to client
 	ResponseUDPAddr(tcpConn, bindAddr)
 	//forward udp
-	done := make(chan bool, 0)
+	done := make(chan bool)
 	go keepUDPAlive(tcpConn.(*net.TCPConn), done)
 	go forwardUDP(udpConn, config)
 	<-done
@@ -67,7 +67,7 @@ type UDPServer struct {
 func (udpServer *UDPServer) forwardRemote() {
 	buf := make([]byte, constant.BufferSize)
 	for {
-		udpServer.serverConn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		udpServer.serverConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
 		n, clientAddr, err := udpServer.serverConn.ReadFromUDP(buf)
 		if err != nil || err == io.EOF || n == 0 {
 			break
@@ -100,7 +100,7 @@ func (udpServer *UDPServer) forwardRemote() {
 func (udpServer *UDPServer) forwardClient(wsConn *websocket.Conn, dstAddr *net.UDPAddr) {
 	defer CloseWS(wsConn)
 	for {
-		wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		wsConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
 		_, buffer, err := wsConn.ReadMessage()
 		n := len(buffer)
 		if err != nil || err == io.EOF || n == 0 {

@@ -5,7 +5,7 @@ import (
 	"net"
 )
 
-var privateIPBlocks []*net.IPNet
+var ips []*net.IPNet
 
 func init() {
 	for _, cidr := range []string{
@@ -22,7 +22,7 @@ func init() {
 		if err != nil {
 			log.Printf("[util] parse error on %q: %v", cidr, err)
 		}
-		privateIPBlocks = append(privateIPBlocks, block)
+		ips = append(ips, block)
 	}
 }
 
@@ -33,9 +33,8 @@ func IsPrivateIP(ip net.IP) bool {
 	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
 		return true
 	}
-
-	for _, block := range privateIPBlocks {
-		if block.Contains(ip) {
+	for _, i := range ips {
+		if i.Contains(ip) {
 			return true
 		}
 	}

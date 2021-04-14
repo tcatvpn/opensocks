@@ -14,14 +14,11 @@ type RequestAddr struct {
 }
 
 // MarshalBinary
-func (e *RequestAddr) MarshalBinary() ([]byte, error) {
-	return json.Marshal(e)
+func (r *RequestAddr) MarshalBinary() ([]byte, error) {
+	return json.Marshal(r)
 }
 
 // UnmarshalBinary
-func (e *RequestAddr) UnmarshalBinary(data []byte) error {
-	if err := json.Unmarshal(data, &e); err != nil {
-		return err
-	}
-	return nil
+func (r *RequestAddr) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, &r)
 }

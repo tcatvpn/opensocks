@@ -23,7 +23,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 	}
 	u := url.URL{Scheme: scheme, Host: config.ServerAddr, Path: constant.WSPath}
 	header := make(http.Header)
-	header.Set("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
+	header.Set("user-agent", constant.UserAgent)
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), header)
 	if err != nil {
 		log.Printf("[client] websocket dial error:%v", err)
@@ -56,7 +56,7 @@ func ForwardRemote(wsConn *websocket.Conn, conn net.Conn) {
 	defer conn.Close()
 	buffer := make([]byte, constant.BufferSize)
 	for {
-		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		conn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
 		n, err := conn.Read(buffer)
 		if err != nil || err == io.EOF || n == 0 {
 			break
@@ -72,7 +72,7 @@ func ForwardClient(wsConn *websocket.Conn, conn net.Conn) {
 	defer CloseWS(wsConn)
 	defer conn.Close()
 	for {
-		wsConn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		wsConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
 		_, buffer, err := wsConn.ReadMessage()
 		n := len(buffer)
 		if err != nil || err == io.EOF || n == 0 {
