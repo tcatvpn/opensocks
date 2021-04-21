@@ -85,7 +85,7 @@ func (udpServer *UDPServer) forwardRemote() {
 		udpServer.serverConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
 		n, clientAddr, err := udpServer.serverConn.ReadFromUDP(buf)
 		if err != nil || err == io.EOF || n == 0 {
-			continue
+			break
 		}
 		if udpServer.clientAddr == nil {
 			udpServer.clientAddr = clientAddr
@@ -93,7 +93,7 @@ func (udpServer *UDPServer) forwardRemote() {
 		b := buf[:n]
 		dstAddr, data := udpServer.getAddr(b)
 		if dstAddr == nil || data == nil {
-			continue
+			break
 		}
 		var wsConn *websocket.Conn
 		if value, ok := udpServer.wsConnCache.Load(dstAddr.String()); ok {
@@ -101,7 +101,7 @@ func (udpServer *UDPServer) forwardRemote() {
 		} else {
 			wsConn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), udpServer.config)
 			if wsConn == nil {
-				continue
+				break
 			}
 			udpServer.wsConnCache.Store(dstAddr.String(), wsConn)
 			go udpServer.forwardClient(wsConn, dstAddr)
