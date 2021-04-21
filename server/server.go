@@ -46,22 +46,22 @@ func Start(config config.Config) {
 		cipher.Decrypt(&buffer)
 		var req proxy.RequestAddr
 		if req.UnmarshalBinary(buffer) != nil {
-			log.Printf("[server] unmarshal binary error:%v", err)
+			log.Printf("[server] failed to unmarshal binary %v", err)
 			return
 		}
 		reqTime, _ := strconv.ParseInt(req.Timestamp, 10, 64)
 		if time.Now().Unix()-reqTime > int64(constant.Timeout) {
-			log.Printf("[server] timestamp expired: %v", reqTime)
+			log.Printf("[server] timestamp expired %v", reqTime)
 			return
 		}
 		if config.Key != req.Key {
-			log.Printf("[server] error key: %s", req.Key)
+			log.Printf("[server] error key %s", req.Key)
 			return
 		}
 		// connect remote server
 		conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(constant.Timeout)*time.Second)
 		if err != nil {
-			log.Printf("[server] dial error:%v", err)
+			log.Printf("[server] failed to dial %v", err)
 			return
 		}
 		// forward data

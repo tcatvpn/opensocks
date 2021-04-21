@@ -25,7 +25,7 @@ func DirectProxy(conn net.Conn, host string, port string, config config.Config) 
 func connectTCP(host string, port string, config config.Config) net.Conn {
 	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 60*time.Second)
 	if err != nil {
-		log.Printf("[tcp] dial error:%v", err)
+		log.Printf("[tcp] failed to dial tcp %v", err)
 		return nil
 	}
 	return conn
