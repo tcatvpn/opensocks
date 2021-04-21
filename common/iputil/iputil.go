@@ -20,7 +20,7 @@ func init() {
 	} {
 		_, block, err := net.ParseCIDR(cidr)
 		if err != nil {
-			log.Printf("[util] parse error on %q: %v", cidr, err)
+			log.Printf("[util] failed to parse cidr on %q: %v", cidr, err)
 		}
 		ips = append(ips, block)
 	}

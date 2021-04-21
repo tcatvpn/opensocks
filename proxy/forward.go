@@ -26,7 +26,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 	header.Set("user-agent", constant.UserAgent)
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), header)
 	if err != nil {
-		log.Printf("[client] websocket dial error:%v", err)
+		log.Printf("[client] failed to dial websocket %v", err)
 		return nil
 	}
 	req := &RequestAddr{}
@@ -38,7 +38,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 	req.Random = cipher.Random()
 	data, err := req.MarshalBinary()
 	if err != nil {
-		log.Printf("[client] marshal binary error:%v", err)
+		log.Printf("[client] failed to marshal binary %v", err)
 		return nil
 	}
 	cipher.Encrypt(&data)
