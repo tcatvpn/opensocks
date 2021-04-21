@@ -40,7 +40,6 @@ func (u *UDPServer) forward() {
 }
 
 type UDPForward struct {
-	clientAddr   *net.UDPAddr
 	serverConn   *net.UDPConn
 	dstAddrCache sync.Map
 	wsConnCache  sync.Map
@@ -51,28 +50,26 @@ func (uf *UDPForward) toRemote() {
 	buf := make([]byte, constant.BufferSize)
 	for {
 		uf.serverConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
-		n, clientAddr, err := uf.serverConn.ReadFromUDP(buf)
+		n, cliAddr, err := uf.serverConn.ReadFromUDP(buf)
 		if err != nil || err == io.EOF || n == 0 {
 			continue
 		}
-		if uf.clientAddr == nil {
-			uf.clientAddr = clientAddr
-		}
 		b := buf[:n]
-		dstAddr, data := uf.getAddr(b)
+		dstAddr, data := uf.getAddr(b, cliAddr)
 		if dstAddr == nil || data == nil {
 			continue
 		}
 		var wsConn *websocket.Conn
-		if value, ok := uf.wsConnCache.Load(dstAddr.String()); ok {
+		key := cliAddr.String() + "->" + dstAddr.String()
+		if value, ok := uf.wsConnCache.Load(key); ok {
 			wsConn = value.(*websocket.Conn)
 		} else {
 			wsConn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), uf.config)
 			if wsConn == nil {
 				continue
 			}
-			uf.wsConnCache.Store(dstAddr.String(), wsConn)
-			go uf.toClient(wsConn, dstAddr)
+			uf.wsConnCache.Store(key, wsConn)
+			go uf.toClient(wsConn, dstAddr, cliAddr)
 		}
 		cipher.Encrypt(&data)
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
@@ -80,8 +77,9 @@ func (uf *UDPForward) toRemote() {
 	}
 }
 
-func (uf *UDPForward) toClient(wsConn *websocket.Conn, dstAddr *net.UDPAddr) {
+func (uf *UDPForward) toClient(wsConn *websocket.Conn, dstAddr *net.UDPAddr, cliAddr *net.UDPAddr) {
 	defer CloseWS(wsConn)
+	key := cliAddr.String() + "->" + dstAddr.String()
 	for {
 		wsConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
 		_, buffer, err := wsConn.ReadMessage()
@@ -89,19 +87,20 @@ func (uf *UDPForward) toClient(wsConn *websocket.Conn, dstAddr *net.UDPAddr) {
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		if header, ok := uf.dstAddrCache.Load(dstAddr.String()); ok {
+		if header, ok := uf.dstAddrCache.Load(key); ok {
 			cipher.Decrypt(&buffer)
 			var data bytes.Buffer
 			data.Write([]byte(header.(string)))
 			data.Write(buffer)
-			uf.serverConn.WriteToUDP(data.Bytes(), uf.clientAddr)
+			uf.serverConn.WriteToUDP(data.Bytes(), cliAddr)
 			counter.IncrReadByte(n)
 		}
 	}
-	uf.dstAddrCache.Delete(dstAddr.String())
+	uf.dstAddrCache.Delete(key)
+	uf.wsConnCache.Delete(key)
 }
 
-func (uf *UDPForward) getAddr(b []byte) (dstAddr *net.UDPAddr, data []byte) {
+func (uf *UDPForward) getAddr(b []byte, cliAddr *net.UDPAddr) (dstAddr *net.UDPAddr, data []byte) {
 	/*
 	   +----+------+------+----------+----------+----------+
 	   |RSV | FRAG | ATYP | DST.ADDR | DST.PORT |   DATA   |
@@ -119,7 +118,8 @@ func (uf *UDPForward) getAddr(b []byte) (dstAddr *net.UDPAddr, data []byte) {
 			IP:   net.IPv4(b[4], b[5], b[6], b[7]),
 			Port: int(b[8])<<8 | int(b[9]),
 		}
-		uf.dstAddrCache.LoadOrStore(dstAddr.String(), string(b[0:10]))
+		key := cliAddr.String() + "->" + dstAddr.String()
+		uf.dstAddrCache.LoadOrStore(key, string(b[0:10]))
 		data = b[10:]
 	case constant.FqdnAddress:
 		domainLength := int(b[4])
@@ -133,7 +133,8 @@ func (uf *UDPForward) getAddr(b []byte) (dstAddr *net.UDPAddr, data []byte) {
 			IP:   ipAddr.IP,
 			Port: int(b[5+domainLength])<<8 | int(b[6+domainLength]),
 		}
-		uf.dstAddrCache.LoadOrStore(dstAddr.String(), string(b[0:7+domainLength]))
+		key := cliAddr.String() + "->" + dstAddr.String()
+		uf.dstAddrCache.LoadOrStore(key, string(b[0:7+domainLength]))
 		data = b[7+domainLength:]
 	case constant.Ipv6Address:
 		{
@@ -141,7 +142,8 @@ func (uf *UDPForward) getAddr(b []byte) (dstAddr *net.UDPAddr, data []byte) {
 				IP:   net.IP(b[4:19]),
 				Port: int(b[20])<<8 | int(b[21]),
 			}
-			uf.dstAddrCache.LoadOrStore(dstAddr.String(), string(b[0:22]))
+			key := cliAddr.String() + "->" + dstAddr.String()
+			uf.dstAddrCache.LoadOrStore(key, string(b[0:22]))
 			data = b[22:]
 		}
 	default:
