@@ -18,16 +18,18 @@ func Start(config config.Config) {
 	if err != nil {
 		log.Panicf("[tcp] failed to listen tcp %v", err)
 	}
+	udpServer := &proxy.UDPServer{Config: config}
+	go udpServer.Start()
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			continue
 		}
-		go connHandler(conn, config)
+		go connHandler(conn, udpServer.UDPConn, config)
 	}
 }
 
-func connHandler(conn net.Conn, config config.Config) {
+func connHandler(conn net.Conn, udpConn *net.UDPConn, config config.Config) {
 	buf := make([]byte, constant.BufferSize)
 	//read the version
 	n, err := conn.Read(buf[0:])
@@ -51,7 +53,7 @@ func connHandler(conn net.Conn, config config.Config) {
 		proxy.TCPProxy(conn, config, b)
 		return
 	case constant.AssociateCommand:
-		proxy.UDPProxy(conn, config)
+		proxy.UDPProxy(conn, udpConn, config)
 		return
 	case constant.BindCommand:
 		proxy.Response(conn, constant.CommandNotSupported)
