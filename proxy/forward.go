@@ -41,7 +41,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 		log.Printf("[client] failed to marshal binary %v", err)
 		return nil
 	}
-	cipher.Encrypt(&data)
+	data = cipher.Encrypt(data)
 	c.WriteMessage(websocket.BinaryMessage, data)
 	return c
 }
@@ -61,8 +61,7 @@ func ForwardRemote(wsConn *websocket.Conn, conn net.Conn) {
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		b := buffer[:n]
-		cipher.Encrypt(&b)
+		b := cipher.Encrypt(buffer[:n])
 		wsConn.WriteMessage(websocket.BinaryMessage, b)
 		counter.IncrWriteByte(n)
 	}
@@ -78,7 +77,7 @@ func ForwardClient(wsConn *websocket.Conn, conn net.Conn) {
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		cipher.Decrypt(&buffer)
+		buffer = cipher.Decrypt(buffer)
 		conn.Write(buffer[:])
 		counter.IncrReadByte(n)
 	}
