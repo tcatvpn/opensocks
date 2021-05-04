@@ -1,6 +1,6 @@
 # Opensocks
 
-Opensocks is a tunnel that helps you break the wall and see the world.
+A proxy that helps you break the wall and see the world.
 
 [![Travis](https://travis-ci.com/net-byte/opensocks.svg?branch=main)](https://github.com/net-byte/opensocks)
 [![Go Report Card](https://goreportcard.com/badge/github.com/net-byte/opensocks)](https://goreportcard.com/report/github.com/net-byte/opensocks)
