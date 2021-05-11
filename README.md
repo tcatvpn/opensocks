@@ -18,7 +18,7 @@ A proxy that helps you break the wall and see the world.
 ## Run client
 ```
 docker run -d --restart=always  --network=host \
---name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:443 -l=:1080 -k=123456
+--name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:443 -l=127.0.0.1:1080 -k=123456
 ```
 
 ## Run server
