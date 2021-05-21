@@ -51,7 +51,7 @@ func CloseWS(wsConn *websocket.Conn) {
 	wsConn.Close()
 }
 
-func ForwardRemote(wsConn *websocket.Conn, conn net.Conn) {
+func TCPToWS(wsConn *websocket.Conn, conn net.Conn) {
 	defer CloseWS(wsConn)
 	defer conn.Close()
 	buffer := make([]byte, constant.BufferSize)
@@ -67,7 +67,7 @@ func ForwardRemote(wsConn *websocket.Conn, conn net.Conn) {
 	}
 }
 
-func ForwardClient(wsConn *websocket.Conn, conn net.Conn) {
+func WSToTCP(wsConn *websocket.Conn, conn net.Conn) {
 	defer CloseWS(wsConn)
 	defer conn.Close()
 	for {

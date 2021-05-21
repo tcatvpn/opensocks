@@ -65,8 +65,8 @@ func Start(config config.Config) {
 			return
 		}
 		// forward data
-		go proxy.ForwardClient(wsConn, conn)
-		go proxy.ForwardRemote(wsConn, conn)
+		go proxy.WSToTCP(wsConn, conn)
+		go proxy.TCPToWS(wsConn, conn)
 
 	})
 
