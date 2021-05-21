@@ -28,7 +28,7 @@ docker run  -d --restart=always --net=host \
 ```
 
 ## Reverse proxy
-Use nginx/caddy(443) to reverse proxy server(8080)
+reverse proxy server(8080) via nginx/caddy(443)
 
 # Cross-platform client
 [opensocks-gui](https://github.com/net-byte/opensocks-gui)
