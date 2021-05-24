@@ -41,7 +41,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 		log.Printf("[client] failed to marshal binary %v", err)
 		return nil
 	}
-	data = cipher.Encrypt(data)
+	data = cipher.XOR(data)
 	c.WriteMessage(websocket.BinaryMessage, data)
 	return c
 }
@@ -61,7 +61,7 @@ func TCPToWS(wsConn *websocket.Conn, conn net.Conn) {
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		b := cipher.Encrypt(buffer[:n])
+		b := cipher.XOR(buffer[:n])
 		wsConn.WriteMessage(websocket.BinaryMessage, b)
 		counter.IncrWriteByte(n)
 	}
@@ -77,7 +77,7 @@ func WSToTCP(wsConn *websocket.Conn, conn net.Conn) {
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		buffer = cipher.Decrypt(buffer)
+		buffer = cipher.XOR(buffer)
 		conn.Write(buffer[:])
 		counter.IncrReadByte(n)
 	}
