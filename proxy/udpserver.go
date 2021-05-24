@@ -73,7 +73,7 @@ func (uf *UDPForward) toRemote() {
 			uf.dstHeader.Store(key, header)
 			go uf.toClient(wsConn, cliAddr, dstAddr)
 		}
-		data = cipher.Encrypt(data)
+		data = cipher.XOR(data)
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
 		counter.IncrWriteByte(n)
 	}
@@ -90,7 +90,7 @@ func (uf *UDPForward) toClient(wsConn *websocket.Conn, cliAddr *net.UDPAddr, dst
 			break
 		}
 		if header, ok := uf.dstHeader.Load(key); ok {
-			buffer = cipher.Decrypt(buffer)
+			buffer = cipher.XOR(buffer)
 			var data bytes.Buffer
 			data.Write(header.([]byte))
 			data.Write(buffer)

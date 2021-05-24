@@ -43,7 +43,7 @@ func Start(config config.Config) {
 		if err != nil {
 			return
 		}
-		buffer = cipher.Decrypt(buffer)
+		buffer = cipher.XOR(buffer)
 		var req proxy.RequestAddr
 		if req.UnmarshalBinary(buffer) != nil {
 			log.Printf("[server] failed to unmarshal binary %v", err)

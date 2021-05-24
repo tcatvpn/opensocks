@@ -11,7 +11,7 @@ A proxy that helps you break the wall and see the world.
 
 * Support socks5 protocol with TCP/UDP implements
 * Support websocket(wss/ws) for application layer
-* Support data encryption with ChaCha20-Poly1305
+* Support data encryption
 
 # Docker
 

@@ -1,35 +1,32 @@
 package cipher
 
 import (
+	"crypto/rc4"
 	"crypto/sha256"
+	"log"
 	"math/rand"
 	"strings"
 	"time"
-
-	"golang.org/x/crypto/chacha20poly1305"
 )
 
-var nonce = make([]byte, chacha20poly1305.NonceSizeX)
-var chars = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖabcdefghijklmnopqrstuvwxyzåäö0123456789")
-var hashKey = []byte("SpUsXuZw4z6B9EbGdKgNjQnTqVsYv2x5")
+var _chars = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖabcdefghijklmnopqrstuvwxyzåäö0123456789")
+var _key = []byte("SpUsXuZw4z6B9EbGdKgNjQnTqVsYv2x5")
 
 func GenerateKey(key string) {
 	sha := sha256.Sum256([]byte(key))
 	buff := make([]byte, 32)
 	copy(sha[:32], buff[:32])
-	hashKey = buff
+	_key = buff
 }
 
-func Encrypt(data []byte) []byte {
-	aead, _ := chacha20poly1305.NewX(hashKey)
-	ciphertext := aead.Seal(nil, nonce, data, nil)
-	return ciphertext
-}
-
-func Decrypt(data []byte) []byte {
-	aead, _ := chacha20poly1305.NewX(hashKey)
-	plaintext, _ := aead.Open(nil, nonce, data, nil)
-	return plaintext
+func XOR(src []byte) []byte {
+	c, err := rc4.NewCipher(_key)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	dst := make([]byte, len(src))
+	c.XORKeyStream(dst, src)
+	return dst
 }
 
 func Random() string {
@@ -37,7 +34,7 @@ func Random() string {
 	length := 8 + rand.Intn(8)
 	var b strings.Builder
 	for i := 0; i < length; i++ {
-		b.WriteRune(chars[rand.Intn(len(chars))])
+		b.WriteRune(_chars[rand.Intn(len(_chars))])
 	}
 	return b.String()
 }
