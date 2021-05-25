@@ -14,7 +14,6 @@ import (
 	"github.com/inhies/go-bytesize"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/constant"
-	"github.com/net-byte/opensocks/common/osutil"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/proxy"
@@ -31,7 +30,6 @@ var upgrader = websocket.Upgrader{
 
 // Start starts server
 func Start(config config.Config) {
-	osutil.SetSysMaxLimit()
 	config.Init()
 	log.Printf("opensocks server started on %s", config.ServerAddr)
 	http.HandleFunc(constant.WSPath, func(w http.ResponseWriter, r *http.Request) {
