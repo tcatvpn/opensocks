@@ -14,7 +14,7 @@ func main() {
 	flag.StringVar(&config.ServerAddr, "s", ":8081", "server address")
 	flag.StringVar(&config.Key, "k", "6w9z$C&F)J@NcRfUjXn2r4u7x!A%D*G-", "encryption key")
 	flag.BoolVar(&config.ServerMode, "S", false, "server mode")
-	flag.BoolVar(&config.Wss, "wss", true, "scheme wss(true)/ws(false)")
+	flag.StringVar(&config.Scheme, "scheme", "wss", "scheme ws/wss")
 	flag.BoolVar(&config.Bypass, "bypass", true, "bypass private ip")
 	flag.Parse()
 

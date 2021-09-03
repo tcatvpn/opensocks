@@ -1,17 +1,27 @@
 # Opensocks
 
-A proxy that helps you break the wall and see the world.
+A socks5 proxy over websocket.
 
 [![Travis](https://travis-ci.com/net-byte/opensocks.svg?branch=main)](https://github.com/net-byte/opensocks)
 [![Go Report Card](https://goreportcard.com/badge/github.com/net-byte/opensocks)](https://goreportcard.com/report/github.com/net-byte/opensocks)
 ![image](https://img.shields.io/badge/License-MIT-orange)
 ![image](https://img.shields.io/badge/License-Anti--996-red)
 
-# Features
-
-* Support socks5 protocol with TCP/UDP implements
-* Support websocket(wss/ws) for application layer
-* Support data encryption
+# Usage
+```
+Usage of /main:
+  -k string
+        encryption key (default "6w9z$C&F)J@NcRfUjXn2r4u7x!A%D*G-")
+  -l string
+        local address (default "127.0.0.1:1080")
+  -s string
+        server address (default ":8081")
+  -scheme string
+        scheme ws/wss (default "wss")
+  -bypass
+        bypass private ip (default true)
+  -S    server mode
+```
 
 # Docker
 

@@ -6,8 +6,8 @@ type Config struct {
 	LocalAddr  string
 	ServerAddr string
 	Key        string
+	Scheme     string
 	ServerMode bool
-	Wss        bool
 	Bypass     bool
 }
 
