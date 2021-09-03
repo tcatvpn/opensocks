@@ -17,11 +17,7 @@ import (
 )
 
 func ConnectWS(network string, host string, port string, config config.Config) *websocket.Conn {
-	scheme := "ws"
-	if config.Wss {
-		scheme = "wss"
-	}
-	u := url.URL{Scheme: scheme, Host: config.ServerAddr, Path: constant.WSPath}
+	u := url.URL{Scheme: config.Scheme, Host: config.ServerAddr, Path: constant.WSPath}
 	header := make(http.Header)
 	header.Set("user-agent", constant.UserAgent)
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), header)

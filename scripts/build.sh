@@ -12,4 +12,4 @@ GOOS=windows GOARCH=amd64 go build -o ./bin/opensocks-windows-amd64.exe ./main.g
 #Operwrt
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-s -w" -o ./bin/opensocks-openwrt-amd64 ./main.go
 
-echo "done!"
+echo "DONE!!!"
