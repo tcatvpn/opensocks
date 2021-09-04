@@ -30,7 +30,6 @@ var upgrader = websocket.Upgrader{
 
 // Start starts server
 func Start(config config.Config) {
-	config.Init()
 	log.Printf("opensocks server started on %s", config.ServerAddr)
 	http.HandleFunc(constant.WSPath, func(w http.ResponseWriter, r *http.Request) {
 		wsConn, err := upgrader.Upgrade(w, r, nil)
@@ -56,10 +55,10 @@ func Start(config config.Config) {
 			log.Printf("[server] error key %s", req.Key)
 			return
 		}
-		// connect remote server
+		// connect real server
 		conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(constant.Timeout)*time.Second)
 		if err != nil {
-			log.Printf("[server] failed to dial %v", err)
+			log.Printf("[server] failed to dial the real server%v", err)
 			return
 		}
 		// forward data

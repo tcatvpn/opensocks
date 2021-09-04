@@ -17,12 +17,19 @@ import (
 	"github.com/net-byte/opensocks/counter"
 )
 
-type UDPServer struct {
+type UDPReply struct {
 	UDPConn *net.UDPConn
 	Config  config.Config
 }
 
-func (u *UDPServer) Start() {
+type ProxyUDP struct {
+	udpConn   *net.UDPConn
+	dstMap    sync.Map
+	wsConnMap sync.Map
+	config    config.Config
+}
+
+func (u *UDPReply) Start() {
 	udpAddr, _ := net.ResolveUDPAddr("udp", u.Config.LocalAddr)
 	udpConn, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
@@ -32,46 +39,39 @@ func (u *UDPServer) Start() {
 	u.UDPConn = udpConn
 	defer u.UDPConn.Close()
 	log.Printf("[udp] server started on %v", u.Config.LocalAddr)
-	u.forward()
+	u.proxy()
 }
 
-func (u *UDPServer) forward() {
-	uf := &UDPForward{serverConn: u.UDPConn, config: u.Config}
-	uf.toRemote()
+func (u *UDPReply) proxy() {
+	proxy := &ProxyUDP{udpConn: u.UDPConn, config: u.Config}
+	proxy.toWS()
 }
 
-type UDPForward struct {
-	serverConn *net.UDPConn
-	dstHeader  sync.Map
-	wsConnPool sync.Map
-	config     config.Config
-}
-
-func (uf *UDPForward) toRemote() {
+func (proxy *ProxyUDP) toWS() {
 	buf := make([]byte, constant.BufferSize)
 	for {
-		uf.serverConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
-		n, cliAddr, err := uf.serverConn.ReadFromUDP(buf)
+		proxy.udpConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
+		n, cliAddr, err := proxy.udpConn.ReadFromUDP(buf)
 		if err != nil || err == io.EOF || n == 0 {
 			continue
 		}
 		b := buf[:n]
-		dstAddr, header, data := uf.getAddr(b)
+		dstAddr, header, data := proxy.getAddr(b)
 		if dstAddr == nil || header == nil || data == nil {
 			continue
 		}
 		key := getKey(cliAddr, dstAddr)
 		var wsConn *websocket.Conn
-		if value, ok := uf.wsConnPool.Load(key); ok {
+		if value, ok := proxy.wsConnMap.Load(key); ok {
 			wsConn = value.(*websocket.Conn)
 		} else {
-			wsConn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), uf.config)
+			wsConn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), proxy.config)
 			if wsConn == nil {
 				continue
 			}
-			uf.wsConnPool.Store(key, wsConn)
-			uf.dstHeader.Store(key, header)
-			go uf.toClient(wsConn, cliAddr, dstAddr)
+			proxy.wsConnMap.Store(key, wsConn)
+			proxy.dstMap.Store(key, header)
+			go proxy.toUDP(wsConn, cliAddr, dstAddr)
 		}
 		data = cipher.XOR(data)
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
@@ -79,7 +79,7 @@ func (uf *UDPForward) toRemote() {
 	}
 }
 
-func (uf *UDPForward) toClient(wsConn *websocket.Conn, cliAddr *net.UDPAddr, dstAddr *net.UDPAddr) {
+func (proxy *ProxyUDP) toUDP(wsConn *websocket.Conn, cliAddr *net.UDPAddr, dstAddr *net.UDPAddr) {
 	defer CloseWS(wsConn)
 	key := getKey(cliAddr, dstAddr)
 	for {
@@ -89,24 +89,20 @@ func (uf *UDPForward) toClient(wsConn *websocket.Conn, cliAddr *net.UDPAddr, dst
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		if header, ok := uf.dstHeader.Load(key); ok {
+		if header, ok := proxy.dstMap.Load(key); ok {
 			buffer = cipher.XOR(buffer)
 			var data bytes.Buffer
 			data.Write(header.([]byte))
 			data.Write(buffer)
-			uf.serverConn.WriteToUDP(data.Bytes(), cliAddr)
+			proxy.udpConn.WriteToUDP(data.Bytes(), cliAddr)
 			counter.IncrReadByte(n)
 		}
 	}
-	uf.dstHeader.Delete(key)
-	uf.wsConnPool.Delete(key)
+	proxy.dstMap.Delete(key)
+	proxy.wsConnMap.Delete(key)
 }
 
-func getKey(cliAddr *net.UDPAddr, dstAddr *net.UDPAddr) string {
-	return fmt.Sprintf("%v->%v", cliAddr.String(), dstAddr.String())
-}
-
-func (uf *UDPForward) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, data []byte) {
+func (proxy *ProxyUDP) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, data []byte) {
 	/*
 	   +----+------+------+----------+----------+----------+
 	   |RSV | FRAG | ATYP | DST.ADDR | DST.PORT |   DATA   |
@@ -153,4 +149,8 @@ func (uf *UDPForward) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, da
 		return nil, nil, nil
 	}
 	return dstAddr, header, data
+}
+
+func getKey(cliAddr *net.UDPAddr, dstAddr *net.UDPAddr) string {
+	return fmt.Sprintf("%v->%v", cliAddr.String(), dstAddr.String())
 }
