@@ -17,7 +17,7 @@ func main() {
 	flag.StringVar(&config.Scheme, "scheme", "wss", "scheme ws/wss")
 	flag.BoolVar(&config.Bypass, "bypass", true, "bypass private ip")
 	flag.Parse()
-
+	config.Init()
 	if config.ServerMode {
 		server.Start(config)
 	} else {
