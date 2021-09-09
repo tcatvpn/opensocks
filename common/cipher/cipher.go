@@ -1,9 +1,7 @@
 package cipher
 
 import (
-	"crypto/rc4"
 	"crypto/sha256"
-	"log"
 	"math/rand"
 	"strings"
 	"time"
@@ -20,13 +18,11 @@ func GenerateKey(key string) {
 }
 
 func XOR(src []byte) []byte {
-	c, err := rc4.NewCipher(_key)
-	if err != nil {
-		log.Fatalln(err)
+	_klen := len(_key)
+	for i := 0; i < len(src); i++ {
+		src[i] ^= _key[i%_klen]
 	}
-	dst := make([]byte, len(src))
-	c.XORKeyStream(dst, src)
-	return dst
+	return src
 }
 
 func Random() string {
