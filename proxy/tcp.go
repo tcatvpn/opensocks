@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/net-byte/opensocks/common/constant"
-	"github.com/net-byte/opensocks/common/iputil"
 	"github.com/net-byte/opensocks/config"
 )
 
@@ -14,7 +13,8 @@ func TCPProxy(conn net.Conn, config config.Config, data []byte) {
 	if host == "" || port == "" {
 		return
 	}
-	if config.Bypass && iputil.IsPrivateIP(net.ParseIP(host)) {
+	// bypass private ip
+	if config.Bypass && net.ParseIP(host) != nil && net.ParseIP(host).IsPrivate() {
 		DirectProxy(conn, host, port, config)
 		return
 	}
