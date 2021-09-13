@@ -73,7 +73,9 @@ func (proxy *ProxyUDP) toWS() {
 			proxy.dstMap.Store(key, header)
 			go proxy.toUDP(wsConn, cliAddr, dstAddr)
 		}
-		data = cipher.XOR(data)
+		if proxy.config.Obfuscate {
+			data = cipher.XOR(data)
+		}
 		wsConn.WriteMessage(websocket.BinaryMessage, data)
 		counter.IncrWriteByte(n)
 	}
@@ -90,7 +92,9 @@ func (proxy *ProxyUDP) toUDP(wsConn *websocket.Conn, cliAddr *net.UDPAddr, dstAd
 			break
 		}
 		if header, ok := proxy.dstMap.Load(key); ok {
-			buffer = cipher.XOR(buffer)
+			if proxy.config.Obfuscate {
+				buffer = cipher.XOR(buffer)
+			}
 			var data bytes.Buffer
 			data.Write(header.([]byte))
 			data.Write(buffer)

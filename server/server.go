@@ -40,7 +40,9 @@ func Start(config config.Config) {
 		if err != nil {
 			return
 		}
-		buffer = cipher.XOR(buffer)
+		if config.Obfuscate {
+			buffer = cipher.XOR(buffer)
+		}
 		var req proxy.RequestAddr
 		if req.UnmarshalBinary(buffer) != nil {
 			log.Printf("[server] failed to unmarshal binary %v", err)
@@ -62,8 +64,8 @@ func Start(config config.Config) {
 			return
 		}
 		// forward data
-		go proxy.WSToTCP(wsConn, conn)
-		go proxy.TCPToWS(wsConn, conn)
+		go proxy.WSToTCP(config, wsConn, conn)
+		go proxy.TCPToWS(config, wsConn, conn)
 
 	})
 

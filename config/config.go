@@ -9,6 +9,7 @@ type Config struct {
 	Scheme     string
 	ServerMode bool
 	Bypass     bool
+	Obfuscate  bool
 }
 
 func (config *Config) Init() {

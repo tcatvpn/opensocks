@@ -37,7 +37,9 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 		log.Printf("[client] failed to marshal binary %v", err)
 		return nil
 	}
-	data = cipher.XOR(data)
+	if config.Obfuscate {
+		data = cipher.XOR(data)
+	}
 	c.WriteMessage(websocket.BinaryMessage, data)
 	return c
 }
@@ -47,7 +49,7 @@ func CloseWS(wsConn *websocket.Conn) {
 	wsConn.Close()
 }
 
-func TCPToWS(wsConn *websocket.Conn, conn net.Conn) {
+func TCPToWS(config config.Config, wsConn *websocket.Conn, conn net.Conn) {
 	defer CloseWS(wsConn)
 	defer conn.Close()
 	buffer := make([]byte, constant.BufferSize)
@@ -57,13 +59,18 @@ func TCPToWS(wsConn *websocket.Conn, conn net.Conn) {
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		b := cipher.XOR(buffer[:n])
+		var b []byte
+		if config.Obfuscate {
+			b = cipher.XOR(buffer[:n])
+		} else {
+			b = buffer[:n]
+		}
 		wsConn.WriteMessage(websocket.BinaryMessage, b)
 		counter.IncrWriteByte(n)
 	}
 }
 
-func WSToTCP(wsConn *websocket.Conn, conn net.Conn) {
+func WSToTCP(config config.Config, wsConn *websocket.Conn, conn net.Conn) {
 	defer CloseWS(wsConn)
 	defer conn.Close()
 	for {
@@ -73,7 +80,9 @@ func WSToTCP(wsConn *websocket.Conn, conn net.Conn) {
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		buffer = cipher.XOR(buffer)
+		if config.Obfuscate {
+			buffer = cipher.XOR(buffer)
+		}
 		conn.Write(buffer[:])
 		counter.IncrReadByte(n)
 	}
