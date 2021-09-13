@@ -26,8 +26,8 @@ func TCPProxy(conn net.Conn, config config.Config, data []byte) {
 	}
 
 	Response(conn, constant.SuccessReply)
-	go TCPToWS(wsConn, conn)
-	go WSToTCP(wsConn, conn)
+	go TCPToWS(config, wsConn, conn)
+	go WSToTCP(config, wsConn, conn)
 
 }
 

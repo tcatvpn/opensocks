@@ -21,6 +21,7 @@ Usage of /main:
   -bypass
         bypass private ip (default true)
   -S    server mode
+  -o    obfuscate data (default true)
 ```
 
 # Docker
