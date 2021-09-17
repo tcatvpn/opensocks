@@ -19,9 +19,9 @@ Usage of /main:
   -scheme string
         scheme ws/wss (default "wss")
   -bypass
-        bypass private ip (default true)
+        bypass private ip
   -S    server mode
-  -o    obfuscate data (default true)
+  -o    obfuscate data
 ```
 
 # Docker
