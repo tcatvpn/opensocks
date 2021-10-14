@@ -35,37 +35,22 @@ func Start(config config.Config) {
 		if err != nil {
 			return
 		}
-		_, buffer, err := wsConn.ReadMessage()
-		if err != nil {
-			return
-		}
-		if config.Obfuscate {
-			buffer = cipher.XOR(buffer)
-		}
-		var req proxy.RequestAddr
-		if req.UnmarshalBinary(buffer) != nil {
-			log.Printf("[server] failed to unmarshal binary %v", err)
-			return
-		}
-		reqTime, _ := strconv.ParseInt(req.Timestamp, 10, 64)
-		if time.Now().Unix()-reqTime > int64(constant.Timeout) {
-			log.Printf("[server] timestamp expired %v", reqTime)
-			return
-		}
-		if config.Key != req.Key {
-			log.Printf("[server] error key %s", req.Key)
+		// handshake
+		ok, req := handshake(config, wsConn)
+		if !ok {
+			wsConn.Close()
 			return
 		}
 		// connect real server
 		conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(constant.Timeout)*time.Second)
 		if err != nil {
+			wsConn.Close()
 			log.Printf("[server] failed to dial the real server%v", err)
 			return
 		}
 		// forward data
 		go proxy.WSToTCP(config, wsConn, conn)
 		go proxy.TCPToWS(config, wsConn, conn)
-
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -87,4 +72,29 @@ func Start(config config.Config) {
 	})
 
 	http.ListenAndServe(config.ServerAddr, nil)
+}
+
+func handshake(config config.Config, wsConn *websocket.Conn) (bool, proxy.RequestAddr) {
+	var req proxy.RequestAddr
+	_, buffer, err := wsConn.ReadMessage()
+	if err != nil {
+		return false, req
+	}
+	if config.Obfuscate {
+		buffer = cipher.XOR(buffer)
+	}
+	if req.UnmarshalBinary(buffer) != nil {
+		log.Printf("[server] failed to unmarshal binary %v", err)
+		return false, req
+	}
+	reqTime, _ := strconv.ParseInt(req.Timestamp, 10, 64)
+	if time.Now().Unix()-reqTime > int64(constant.Timeout) {
+		log.Printf("[server] timestamp expired %v", reqTime)
+		return false, req
+	}
+	if config.Key != req.Key {
+		log.Printf("[server] error key %s", req.Key)
+		return false, req
+	}
+	return true, req
 }

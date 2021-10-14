@@ -2,11 +2,11 @@ package proxy
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"log"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -156,5 +156,5 @@ func (proxy *ProxyUDP) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, d
 }
 
 func getKey(cliAddr *net.UDPAddr, dstAddr *net.UDPAddr) string {
-	return fmt.Sprintf("%v->%v", cliAddr.String(), dstAddr.String())
+	return strings.Join([]string{cliAddr.String(), dstAddr.String()}, "->")
 }

@@ -16,7 +16,7 @@ func main() {
 	flag.BoolVar(&config.ServerMode, "S", false, "server mode")
 	flag.StringVar(&config.Scheme, "scheme", "wss", "scheme ws/wss")
 	flag.BoolVar(&config.Bypass, "bypass", false, "bypass private ip")
-	flag.BoolVar(&config.Obfuscate, "o", false, "obfuscate data")
+	flag.BoolVar(&config.Obfuscate, "o", false, "data obfuscation")
 	flag.Parse()
 	config.Init()
 	if config.ServerMode {

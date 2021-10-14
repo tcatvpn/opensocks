@@ -25,6 +25,7 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 		log.Printf("[client] failed to dial websocket %v", err)
 		return nil
 	}
+	// handshake
 	req := &RequestAddr{}
 	req.Network = network
 	req.Host = host
@@ -49,13 +50,13 @@ func CloseWS(wsConn *websocket.Conn) {
 	wsConn.Close()
 }
 
-func TCPToWS(config config.Config, wsConn *websocket.Conn, conn net.Conn) {
+func TCPToWS(config config.Config, wsConn *websocket.Conn, tcpConn net.Conn) {
 	defer CloseWS(wsConn)
-	defer conn.Close()
+	defer tcpConn.Close()
 	buffer := make([]byte, constant.BufferSize)
 	for {
-		conn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
-		n, err := conn.Read(buffer)
+		tcpConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
+		n, err := tcpConn.Read(buffer)
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
@@ -70,9 +71,9 @@ func TCPToWS(config config.Config, wsConn *websocket.Conn, conn net.Conn) {
 	}
 }
 
-func WSToTCP(config config.Config, wsConn *websocket.Conn, conn net.Conn) {
+func WSToTCP(config config.Config, wsConn *websocket.Conn, tcpConn net.Conn) {
 	defer CloseWS(wsConn)
-	defer conn.Close()
+	defer tcpConn.Close()
 	for {
 		wsConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
 		_, buffer, err := wsConn.ReadMessage()
@@ -83,7 +84,7 @@ func WSToTCP(config config.Config, wsConn *websocket.Conn, conn net.Conn) {
 		if config.Obfuscate {
 			buffer = cipher.XOR(buffer)
 		}
-		conn.Write(buffer[:])
+		tcpConn.Write(buffer[:])
 		counter.IncrReadByte(n)
 	}
 }
