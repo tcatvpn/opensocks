@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -24,7 +23,7 @@ type UDPReply struct {
 
 type ProxyUDP struct {
 	udpConn   *net.UDPConn
-	dstMap    sync.Map
+	headerMap sync.Map
 	wsConnMap sync.Map
 	config    config.Config
 }
@@ -44,10 +43,10 @@ func (u *UDPReply) Start() {
 
 func (u *UDPReply) proxy() {
 	proxy := &ProxyUDP{udpConn: u.UDPConn, config: u.Config}
-	proxy.toWS()
+	proxy.toRemote()
 }
 
-func (proxy *ProxyUDP) toWS() {
+func (proxy *ProxyUDP) toRemote() {
 	buf := make([]byte, constant.BufferSize)
 	for {
 		proxy.udpConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
@@ -60,7 +59,7 @@ func (proxy *ProxyUDP) toWS() {
 		if dstAddr == nil || header == nil || data == nil {
 			continue
 		}
-		key := getKey(cliAddr, dstAddr)
+		key := cliAddr.String()
 		var wsConn *websocket.Conn
 		if value, ok := proxy.wsConnMap.Load(key); ok {
 			wsConn = value.(*websocket.Conn)
@@ -70,8 +69,8 @@ func (proxy *ProxyUDP) toWS() {
 				continue
 			}
 			proxy.wsConnMap.Store(key, wsConn)
-			proxy.dstMap.Store(key, header)
-			go proxy.toUDP(wsConn, cliAddr, dstAddr)
+			proxy.headerMap.Store(key, header)
+			go proxy.toLocal(wsConn, cliAddr)
 		}
 		if proxy.config.Obfuscate {
 			data = cipher.XOR(data)
@@ -81,9 +80,9 @@ func (proxy *ProxyUDP) toWS() {
 	}
 }
 
-func (proxy *ProxyUDP) toUDP(wsConn *websocket.Conn, cliAddr *net.UDPAddr, dstAddr *net.UDPAddr) {
+func (proxy *ProxyUDP) toLocal(wsConn *websocket.Conn, cliAddr *net.UDPAddr) {
 	defer CloseWS(wsConn)
-	key := getKey(cliAddr, dstAddr)
+	key := cliAddr.String()
 	for {
 		wsConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
 		_, buffer, err := wsConn.ReadMessage()
@@ -91,7 +90,7 @@ func (proxy *ProxyUDP) toUDP(wsConn *websocket.Conn, cliAddr *net.UDPAddr, dstAd
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		if header, ok := proxy.dstMap.Load(key); ok {
+		if header, ok := proxy.headerMap.Load(key); ok {
 			if proxy.config.Obfuscate {
 				buffer = cipher.XOR(buffer)
 			}
@@ -102,7 +101,7 @@ func (proxy *ProxyUDP) toUDP(wsConn *websocket.Conn, cliAddr *net.UDPAddr, dstAd
 			counter.IncrReadByte(n)
 		}
 	}
-	proxy.dstMap.Delete(key)
+	proxy.headerMap.Delete(key)
 	proxy.wsConnMap.Delete(key)
 }
 
@@ -153,8 +152,4 @@ func (proxy *ProxyUDP) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, d
 		return nil, nil, nil
 	}
 	return dstAddr, header, data
-}
-
-func getKey(cliAddr *net.UDPAddr, dstAddr *net.UDPAddr) string {
-	return strings.Join([]string{cliAddr.String(), dstAddr.String()}, "->")
 }
