@@ -1,28 +1,27 @@
 package proxy
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"log"
 	"net"
-	"net/http"
-	"net/url"
 	"strconv"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/constant"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 )
 
-func ConnectWS(network string, host string, port string, config config.Config) *websocket.Conn {
-	u := url.URL{Scheme: config.Scheme, Host: config.ServerAddr, Path: constant.WSPath}
-	header := make(http.Header)
-	header.Set("user-agent", constant.UserAgent)
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), header)
+func ConnectWS(network string, host string, port string, config config.Config) net.Conn {
+	url := fmt.Sprintf("%s://%s%s", config.Scheme, config.ServerAddr, constant.WSPath)
+	c, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 	if err != nil {
-		log.Printf("[client] failed to dial websocket %v", err)
+		log.Printf("[client] failed to dial websocket %s %v", url, err)
 		return nil
 	}
 	// handshake
@@ -41,22 +40,21 @@ func ConnectWS(network string, host string, port string, config config.Config) *
 	if config.Obfuscate {
 		data = cipher.XOR(data)
 	}
-	c.WriteMessage(websocket.BinaryMessage, data)
+	wserr := wsutil.WriteClientText(c, data)
+	if wserr != nil {
+		log.Printf("[client] failed to write message %v", wserr)
+		return nil
+	}
 	return c
 }
 
-func CloseWS(wsConn *websocket.Conn) {
-	wsConn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second*5))
-	wsConn.Close()
-}
-
-func TCPToWS(config config.Config, wsConn *websocket.Conn, tcpConn net.Conn) {
-	defer CloseWS(wsConn)
-	defer tcpConn.Close()
+func TCPToWS(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
+	defer wsconn.Close()
+	defer tcpconn.Close()
 	buffer := make([]byte, constant.BufferSize)
 	for {
-		tcpConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
-		n, err := tcpConn.Read(buffer)
+		tcpconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
+		n, err := tcpconn.Read(buffer)
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
@@ -66,17 +64,17 @@ func TCPToWS(config config.Config, wsConn *websocket.Conn, tcpConn net.Conn) {
 		} else {
 			b = buffer[:n]
 		}
-		wsConn.WriteMessage(websocket.BinaryMessage, b)
 		counter.IncrWriteByte(n)
+		wsutil.WriteClientBinary(wsconn, b)
 	}
 }
 
-func WSToTCP(config config.Config, wsConn *websocket.Conn, tcpConn net.Conn) {
-	defer CloseWS(wsConn)
-	defer tcpConn.Close()
+func WSToTCP(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
+	defer wsconn.Close()
+	defer tcpconn.Close()
 	for {
-		wsConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
-		_, buffer, err := wsConn.ReadMessage()
+		wsconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
+		buffer, err := wsutil.ReadServerBinary(wsconn)
 		n := len(buffer)
 		if err != nil || err == io.EOF || n == 0 {
 			break
@@ -84,7 +82,7 @@ func WSToTCP(config config.Config, wsConn *websocket.Conn, tcpConn net.Conn) {
 		if config.Obfuscate {
 			buffer = cipher.XOR(buffer)
 		}
-		tcpConn.Write(buffer[:])
 		counter.IncrReadByte(n)
+		tcpconn.Write(buffer[:])
 	}
 }

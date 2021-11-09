@@ -13,7 +13,7 @@ import (
 
 //Start starts server
 func Start(config config.Config) {
-	log.Printf("opensocks client started on %s", config.LocalAddr)
+	log.Printf("opensocks [tcp] client started on %s", config.LocalAddr)
 	udpConn := handleUDP(config)
 	handleTCP(config, udpConn)
 }

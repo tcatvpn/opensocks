@@ -10,7 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
 	"github.com/inhies/go-bytesize"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/constant"
@@ -19,38 +20,16 @@ import (
 	"github.com/net-byte/opensocks/proxy"
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  constant.BufferSize,
-	WriteBufferSize: constant.BufferSize,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
 // Start starts server
 func Start(config config.Config) {
-	log.Printf("opensocks server started on %s", config.ServerAddr)
+
 	http.HandleFunc(constant.WSPath, func(w http.ResponseWriter, r *http.Request) {
-		wsConn, err := upgrader.Upgrade(w, r, nil)
+		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
+			log.Printf("[server] failed to upgrade http %v", err)
 			return
 		}
-		// handshake
-		ok, req := handshake(config, wsConn)
-		if !ok {
-			wsConn.Close()
-			return
-		}
-		// connect real server
-		conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(constant.Timeout)*time.Second)
-		if err != nil {
-			wsConn.Close()
-			log.Printf("[server] failed to dial the real server%v", err)
-			return
-		}
-		// forward data
-		go proxy.WSToTCP(config, wsConn, conn)
-		go proxy.TCPToWS(config, wsConn, conn)
+		worker(conn, config)
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -70,13 +49,33 @@ func Start(config config.Config) {
 		resp := fmt.Sprintf("download %v upload %v", bytesize.New(float64(counter.TotalWriteByte)).String(), bytesize.New(float64(counter.TotalReadByte)).String())
 		io.WriteString(w, resp)
 	})
-
+	log.Printf("opensocks server started on %s", config.ServerAddr)
 	http.ListenAndServe(config.ServerAddr, nil)
 }
 
-func handshake(config config.Config, wsConn *websocket.Conn) (bool, proxy.RequestAddr) {
+func worker(wsconn net.Conn, config config.Config) {
+	// handshake
+	ok, req := handshake(config, wsconn)
+	if !ok {
+		wsconn.Close()
+		return
+	}
+	// connect real server
+	log.Printf("[server] dial to server %v %v:%v", req.Network, req.Host, req.Port)
+	conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(constant.Timeout)*time.Second)
+	if err != nil {
+		wsconn.Close()
+		log.Printf("[server] failed to dial the real server%v", err)
+		return
+	}
+	// forward data
+	go toRmote(config, wsconn, conn)
+	toLocal(config, wsconn, conn)
+}
+
+func handshake(config config.Config, conn net.Conn) (bool, proxy.RequestAddr) {
 	var req proxy.RequestAddr
-	_, buffer, err := wsConn.ReadMessage()
+	buffer, err := wsutil.ReadClientText(conn)
 	if err != nil {
 		return false, req
 	}
@@ -84,7 +83,7 @@ func handshake(config config.Config, wsConn *websocket.Conn) (bool, proxy.Reques
 		buffer = cipher.XOR(buffer)
 	}
 	if req.UnmarshalBinary(buffer) != nil {
-		log.Printf("[server] failed to unmarshal binary %v", err)
+		log.Printf("[server] failed to decode request %v", err)
 		return false, req
 	}
 	reqTime, _ := strconv.ParseInt(req.Timestamp, 10, 64)
@@ -97,4 +96,43 @@ func handshake(config config.Config, wsConn *websocket.Conn) (bool, proxy.Reques
 		return false, req
 	}
 	return true, req
+}
+
+func toLocal(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
+	defer wsconn.Close()
+	defer tcpconn.Close()
+	buffer := make([]byte, constant.BufferSize)
+	for {
+		tcpconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
+		n, err := tcpconn.Read(buffer)
+		if err != nil || err == io.EOF || n == 0 {
+			break
+		}
+		var b []byte
+		if config.Obfuscate {
+			b = cipher.XOR(buffer[:n])
+		} else {
+			b = buffer[:n]
+		}
+		counter.IncrWriteByte(n)
+		wsutil.WriteServerBinary(wsconn, b)
+	}
+}
+
+func toRmote(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
+	defer wsconn.Close()
+	defer tcpconn.Close()
+	for {
+		wsconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
+		buffer, err := wsutil.ReadClientBinary(wsconn)
+		n := len(buffer)
+		if err != nil || err == io.EOF || n == 0 {
+			break
+		}
+		if config.Obfuscate {
+			buffer = cipher.XOR(buffer)
+		}
+		counter.IncrReadByte(n)
+		tcpconn.Write(buffer[:])
+	}
 }
