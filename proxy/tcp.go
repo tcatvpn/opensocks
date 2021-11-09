@@ -26,11 +26,11 @@ func TCPProxy(conn net.Conn, config config.Config, data []byte) {
 
 	wsconn := connectServer("tcp", host, port, config)
 	if wsconn == nil {
-		Response(conn, constant.ConnectionRefused)
+		ResponseTCP(conn, constant.ConnectionRefused)
 		return
 	}
 
-	Response(conn, constant.SuccessReply)
+	ResponseTCP(conn, constant.SuccessReply)
 	go toRemote(config, wsconn, conn)
 	go toLocal(config, wsconn, conn)
 }

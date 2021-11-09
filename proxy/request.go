@@ -13,12 +13,10 @@ type RequestAddr struct {
 	Random    string
 }
 
-// MarshalBinary
 func (r *RequestAddr) MarshalBinary() ([]byte, error) {
 	return json.Marshal(r)
 }
 
-// UnmarshalBinary
 func (r *RequestAddr) UnmarshalBinary(data []byte) error {
 	return json.Unmarshal(data, &r)
 }

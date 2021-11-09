@@ -11,27 +11,19 @@ import (
 )
 
 func DirectProxy(conn net.Conn, host string, port string, config config.Config) {
-	remoteConn := connectTCP(host, port, config)
-	if remoteConn == nil {
-		Response(conn, constant.ConnectionRefused)
+	remoteConn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), time.Duration(constant.Timeout)*time.Second)
+	if err != nil {
+		log.Printf("[tcp] failed to dial tcp %v", err)
+		ResponseTCP(conn, constant.ConnectionRefused)
 		return
 	}
 
-	Response(conn, constant.SuccessReply)
-	go forward(remoteConn, conn)
-	go forward(conn, remoteConn)
+	ResponseTCP(conn, constant.SuccessReply)
+	go copy(remoteConn, conn)
+	go copy(conn, remoteConn)
 }
 
-func connectTCP(host string, port string, config config.Config) net.Conn {
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 60*time.Second)
-	if err != nil {
-		log.Printf("[tcp] failed to dial tcp %v", err)
-		return nil
-	}
-	return conn
-}
-
-func forward(to io.WriteCloser, from io.ReadCloser) {
+func copy(to io.WriteCloser, from io.ReadCloser) {
 	defer to.Close()
 	defer from.Close()
 	io.Copy(to, from)
