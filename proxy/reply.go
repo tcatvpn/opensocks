@@ -64,7 +64,7 @@ func (proxy *ProxyUDP) toRemote() {
 		if value, ok := proxy.wsconnMap.Load(key); ok {
 			wsconn = value.(net.Conn)
 		} else {
-			wsconn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), proxy.config)
+			wsconn = connectServer("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), proxy.config)
 			if wsconn == nil {
 				continue
 			}
@@ -75,8 +75,8 @@ func (proxy *ProxyUDP) toRemote() {
 		if proxy.config.Obfuscate {
 			data = cipher.XOR(data)
 		}
-		wsutil.WriteClientBinary(wsconn, data)
 		counter.IncrWriteByte(n)
+		wsutil.WriteClientBinary(wsconn, data)
 	}
 }
 
@@ -97,8 +97,8 @@ func (proxy *ProxyUDP) toLocal(wsconn net.Conn, cliAddr *net.UDPAddr) {
 			var data bytes.Buffer
 			data.Write(header.([]byte))
 			data.Write(buffer)
-			proxy.udpConn.WriteToUDP(data.Bytes(), cliAddr)
 			counter.IncrReadByte(n)
+			proxy.udpConn.WriteToUDP(data.Bytes(), cliAddr)
 		}
 	}
 	proxy.headerMap.Delete(key)
