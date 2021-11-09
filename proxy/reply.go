@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/gobwas/ws/wsutil"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/constant"
 	"github.com/net-byte/opensocks/config"
@@ -24,7 +24,7 @@ type UDPReply struct {
 type ProxyUDP struct {
 	udpConn   *net.UDPConn
 	headerMap sync.Map
-	wsConnMap sync.Map
+	wsconnMap sync.Map
 	config    config.Config
 }
 
@@ -37,7 +37,7 @@ func (u *UDPReply) Start() {
 	}
 	u.UDPConn = udpConn
 	defer u.UDPConn.Close()
-	log.Printf("[udp] server started on %v", u.Config.LocalAddr)
+	log.Printf("opensocks [udp] client started on %v", u.Config.LocalAddr)
 	u.proxy()
 }
 
@@ -60,32 +60,32 @@ func (proxy *ProxyUDP) toRemote() {
 			continue
 		}
 		key := cliAddr.String()
-		var wsConn *websocket.Conn
-		if value, ok := proxy.wsConnMap.Load(key); ok {
-			wsConn = value.(*websocket.Conn)
+		var wsconn net.Conn
+		if value, ok := proxy.wsconnMap.Load(key); ok {
+			wsconn = value.(net.Conn)
 		} else {
-			wsConn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), proxy.config)
-			if wsConn == nil {
+			wsconn = ConnectWS("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), proxy.config)
+			if wsconn == nil {
 				continue
 			}
-			proxy.wsConnMap.Store(key, wsConn)
+			proxy.wsconnMap.Store(key, wsconn)
 			proxy.headerMap.Store(key, header)
-			go proxy.toLocal(wsConn, cliAddr)
+			go proxy.toLocal(wsconn, cliAddr)
 		}
 		if proxy.config.Obfuscate {
 			data = cipher.XOR(data)
 		}
-		wsConn.WriteMessage(websocket.BinaryMessage, data)
+		wsutil.WriteClientBinary(wsconn, data)
 		counter.IncrWriteByte(n)
 	}
 }
 
-func (proxy *ProxyUDP) toLocal(wsConn *websocket.Conn, cliAddr *net.UDPAddr) {
-	defer CloseWS(wsConn)
+func (proxy *ProxyUDP) toLocal(wsconn net.Conn, cliAddr *net.UDPAddr) {
+	defer wsconn.Close()
 	key := cliAddr.String()
 	for {
-		wsConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
-		_, buffer, err := wsConn.ReadMessage()
+		wsconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
+		buffer, err := wsutil.ReadServerBinary(wsconn)
 		n := len(buffer)
 		if err != nil || err == io.EOF || n == 0 {
 			break
@@ -102,7 +102,7 @@ func (proxy *ProxyUDP) toLocal(wsConn *websocket.Conn, cliAddr *net.UDPAddr) {
 		}
 	}
 	proxy.headerMap.Delete(key)
-	proxy.wsConnMap.Delete(key)
+	proxy.wsconnMap.Delete(key)
 }
 
 func (proxy *ProxyUDP) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, data []byte) {
