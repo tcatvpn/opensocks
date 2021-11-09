@@ -65,7 +65,7 @@ func worker(wsconn net.Conn, config config.Config) {
 	conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(constant.Timeout)*time.Second)
 	if err != nil {
 		wsconn.Close()
-		log.Printf("[server] failed to dial the real server%v", err)
+		log.Printf("[server] failed to dial server %v", err)
 		return
 	}
 	// forward data

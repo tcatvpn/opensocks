@@ -1,11 +1,16 @@
 package proxy
 
 import (
+	"io"
 	"net"
 	"strconv"
+	"time"
 
+	"github.com/gobwas/ws/wsutil"
+	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/constant"
 	"github.com/net-byte/opensocks/config"
+	"github.com/net-byte/opensocks/counter"
 )
 
 func TCPProxy(conn net.Conn, config config.Config, data []byte) {
@@ -19,16 +24,54 @@ func TCPProxy(conn net.Conn, config config.Config, data []byte) {
 		return
 	}
 
-	wsConn := ConnectWS("tcp", host, port, config)
-	if wsConn == nil {
+	wsconn := connectServer("tcp", host, port, config)
+	if wsconn == nil {
 		Response(conn, constant.ConnectionRefused)
 		return
 	}
 
 	Response(conn, constant.SuccessReply)
-	go TCPToWS(config, wsConn, conn)
-	go WSToTCP(config, wsConn, conn)
+	go toRemote(config, wsconn, conn)
+	go toLocal(config, wsconn, conn)
+}
 
+func toRemote(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
+	defer wsconn.Close()
+	defer tcpconn.Close()
+	buffer := make([]byte, constant.BufferSize)
+	for {
+		tcpconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
+		n, err := tcpconn.Read(buffer)
+		if err != nil || err == io.EOF || n == 0 {
+			break
+		}
+		var b []byte
+		if config.Obfuscate {
+			b = cipher.XOR(buffer[:n])
+		} else {
+			b = buffer[:n]
+		}
+		counter.IncrWriteByte(n)
+		wsutil.WriteClientBinary(wsconn, b)
+	}
+}
+
+func toLocal(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
+	defer wsconn.Close()
+	defer tcpconn.Close()
+	for {
+		wsconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
+		buffer, err := wsutil.ReadServerBinary(wsconn)
+		n := len(buffer)
+		if err != nil || err == io.EOF || n == 0 {
+			break
+		}
+		if config.Obfuscate {
+			buffer = cipher.XOR(buffer)
+		}
+		counter.IncrReadByte(n)
+		tcpconn.Write(buffer[:])
+	}
 }
 
 func getAddr(b []byte) (host string, port string) {
