@@ -20,16 +20,15 @@ import (
 	"github.com/net-byte/opensocks/proxy"
 )
 
-// Start starts server
+// Start server
 func Start(config config.Config) {
-
 	http.HandleFunc(constant.WSPath, func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
 			log.Printf("[server] failed to upgrade http %v", err)
 			return
 		}
-		worker(conn, config)
+		wsHandler(conn, config)
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -49,11 +48,12 @@ func Start(config config.Config) {
 		resp := fmt.Sprintf("download %v upload %v", bytesize.New(float64(counter.TotalWriteByte)).String(), bytesize.New(float64(counter.TotalReadByte)).String())
 		io.WriteString(w, resp)
 	})
+
 	log.Printf("opensocks server started on %s", config.ServerAddr)
 	http.ListenAndServe(config.ServerAddr, nil)
 }
 
-func worker(wsconn net.Conn, config config.Config) {
+func wsHandler(wsconn net.Conn, config config.Config) {
 	// handshake
 	ok, req := handshake(config, wsconn)
 	if !ok {
@@ -69,7 +69,7 @@ func worker(wsconn net.Conn, config config.Config) {
 		return
 	}
 	// forward data
-	go toRmote(config, wsconn, conn)
+	go toRemote(config, wsconn, conn)
 	toLocal(config, wsconn, conn)
 }
 
@@ -119,7 +119,7 @@ func toLocal(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
 	}
 }
 
-func toRmote(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
+func toRemote(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
 	defer wsconn.Close()
 	defer tcpconn.Close()
 	for {

@@ -8,7 +8,7 @@ import (
 	"github.com/net-byte/opensocks/common/constant"
 )
 
-func Response(conn net.Conn, rep byte) {
+func ResponseTCP(conn net.Conn, rep byte) {
 	/**
 	  +----+-----+-------+------+----------+----------+
 	  |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
@@ -30,7 +30,7 @@ func ResponseNoAuth(conn net.Conn) {
 	conn.Write([]byte{constant.Socks5Version, constant.NoAuth})
 }
 
-func ResponseUDPAddr(conn net.Conn, bindAddr *net.UDPAddr) {
+func ResponseUDP(conn net.Conn, bindAddr *net.UDPAddr) {
 	/**
 	  +----+-----+-------+------+----------+----------+
 	  |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |

@@ -11,7 +11,7 @@ import (
 	"github.com/net-byte/opensocks/proxy"
 )
 
-//Start starts server
+//Start client
 func Start(config config.Config) {
 	log.Printf("opensocks [tcp] client started on %s", config.LocalAddr)
 	udpConn := handleUDP(config)
@@ -41,7 +41,7 @@ func handleUDP(config config.Config) *net.UDPConn {
 
 func tcpHandler(tcpConn net.Conn, udpConn *net.UDPConn, config config.Config) {
 	buf := make([]byte, constant.BufferSize)
-	//read the version
+	//read version
 	n, err := tcpConn.Read(buf[0:])
 	if err != nil || err == io.EOF {
 		return
@@ -52,7 +52,7 @@ func tcpHandler(tcpConn net.Conn, udpConn *net.UDPConn, config config.Config) {
 	}
 	//no auth
 	proxy.ResponseNoAuth(tcpConn)
-	//read the cmd
+	//read cmd
 	n, err = tcpConn.Read(buf[0:])
 	if err != nil || err == io.EOF {
 		return
@@ -66,10 +66,10 @@ func tcpHandler(tcpConn net.Conn, udpConn *net.UDPConn, config config.Config) {
 		proxy.UDPProxy(tcpConn, udpConn, config)
 		return
 	case constant.BindCommand:
-		proxy.Response(tcpConn, constant.CommandNotSupported)
+		proxy.ResponseTCP(tcpConn, constant.CommandNotSupported)
 		return
 	default:
-		proxy.Response(tcpConn, constant.CommandNotSupported)
+		proxy.ResponseTCP(tcpConn, constant.CommandNotSupported)
 		return
 	}
 }

@@ -15,15 +15,15 @@ func UDPProxy(tcpConn net.Conn, udpConn *net.UDPConn, config config.Config) {
 		return
 	}
 	bindAddr, _ := net.ResolveUDPAddr("udp", udpConn.LocalAddr().String())
-	//response to client
-	ResponseUDPAddr(tcpConn, bindAddr)
-	//forward udp
+	// response to client
+	ResponseUDP(tcpConn, bindAddr)
+	// keep client alive
 	done := make(chan bool)
-	go keepUDPAlive(tcpConn.(*net.TCPConn), done)
+	go keepTCPAlive(tcpConn.(*net.TCPConn), done)
 	<-done
 }
 
-func keepUDPAlive(tcpConn *net.TCPConn, done chan<- bool) {
+func keepTCPAlive(tcpConn *net.TCPConn, done chan<- bool) {
 	tcpConn.SetKeepAlive(true)
 	buf := make([]byte, constant.BufferSize)
 	for {
