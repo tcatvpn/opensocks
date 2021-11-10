@@ -75,7 +75,7 @@ func (proxy *ProxyUDP) toRemote() {
 		if proxy.config.Obfuscate {
 			data = cipher.XOR(data)
 		}
-		counter.IncrWriteByte(n)
+		counter.IncrWrittenBytes(n)
 		wsutil.WriteClientBinary(wsconn, data)
 	}
 }
@@ -97,7 +97,7 @@ func (proxy *ProxyUDP) toLocal(wsconn net.Conn, cliAddr *net.UDPAddr) {
 			var data bytes.Buffer
 			data.Write(header.([]byte))
 			data.Write(buffer)
-			counter.IncrReadByte(n)
+			counter.IncrReadBytes(n)
 			proxy.udpConn.WriteToUDP(data.Bytes(), cliAddr)
 		}
 	}

@@ -51,7 +51,7 @@ func toRemote(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
 		} else {
 			b = buffer[:n]
 		}
-		counter.IncrWriteByte(n)
+		counter.IncrWrittenBytes(n)
 		wsutil.WriteClientBinary(wsconn, b)
 	}
 }
@@ -69,7 +69,7 @@ func toLocal(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
 		if config.Obfuscate {
 			buffer = cipher.XOR(buffer)
 		}
-		counter.IncrReadByte(n)
+		counter.IncrReadBytes(n)
 		tcpconn.Write(buffer[:])
 	}
 }
