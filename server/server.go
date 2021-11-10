@@ -45,7 +45,7 @@ func Start(config config.Config) {
 	})
 
 	http.HandleFunc("/sys", func(w http.ResponseWriter, req *http.Request) {
-		resp := fmt.Sprintf("download %v upload %v", bytesize.New(float64(counter.TotalWriteByte)).String(), bytesize.New(float64(counter.TotalReadByte)).String())
+		resp := fmt.Sprintf("download %v upload %v", bytesize.New(float64(counter.TotalWrittenBytes)).String(), bytesize.New(float64(counter.TotalReadBytes)).String())
 		io.WriteString(w, resp)
 	})
 
@@ -61,7 +61,7 @@ func wsHandler(wsconn net.Conn, config config.Config) {
 		return
 	}
 	// connect real server
-	log.Printf("[server] dial to server %v %v:%v", req.Network, req.Host, req.Port)
+	// log.Printf("[server] dial to server %v %v:%v", req.Network, req.Host, req.Port)
 	conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(constant.Timeout)*time.Second)
 	if err != nil {
 		wsconn.Close()
@@ -114,7 +114,7 @@ func toLocal(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
 		} else {
 			b = buffer[:n]
 		}
-		counter.IncrWriteByte(n)
+		counter.IncrWrittenBytes(n)
 		wsutil.WriteServerBinary(wsconn, b)
 	}
 }
@@ -132,7 +132,7 @@ func toRemote(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
 		if config.Obfuscate {
 			buffer = cipher.XOR(buffer)
 		}
-		counter.IncrReadByte(n)
+		counter.IncrReadBytes(n)
 		tcpconn.Write(buffer[:])
 	}
 }
