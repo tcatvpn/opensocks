@@ -2,19 +2,19 @@ package cipher
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"math/rand"
 	"strings"
 	"time"
 )
 
-var _chars = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖabcdefghijklmnopqrstuvwxyzåäö0123456789")
+var _chars = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
 var _key = []byte("SpUsXuZw4z6B9EbGdKgNjQnTqVsYv2x5")
 
 func GenerateKey(key string) {
 	sha := sha256.Sum256([]byte(key))
-	buff := make([]byte, 32)
-	copy(sha[:32], buff[:32])
-	_key = buff
+	encode := hex.EncodeToString(sha[:])
+	_key = []byte(encode[0:32])
 }
 
 func XOR(src []byte) []byte {
