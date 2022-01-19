@@ -36,6 +36,6 @@ const (
 
 const (
 	Timeout    int    = 60
-	BufferSize int    = 4 * 1024
+	BufferSize int    = 8 * 1024
 	WSPath     string = "/way-to-freedom"
 )
