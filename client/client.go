@@ -37,7 +37,8 @@ func handleUDP(config config.Config) *net.UDPConn {
 }
 
 func tcpHandler(tcpConn net.Conn, udpConn *net.UDPConn, config config.Config) {
-	buf := make([]byte, constant.BufferSize)
+	buf := config.BytePool.Get()
+	defer config.BytePool.Put(buf)
 	//read version
 	n, err := tcpConn.Read(buf[0:])
 	if err != nil || err == io.EOF {

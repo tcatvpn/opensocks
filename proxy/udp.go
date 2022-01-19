@@ -66,7 +66,8 @@ func (relay *UDPRelay) Start() *net.UDPConn {
 
 func (relay *UDPRelay) toRemote() {
 	defer relay.UDPConn.Close()
-	buf := make([]byte, constant.BufferSize)
+	buf := relay.Config.BytePool.Get()
+	defer relay.Config.BytePool.Put(buf)
 	for {
 		relay.UDPConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
 		n, cliAddr, err := relay.UDPConn.ReadFromUDP(buf)

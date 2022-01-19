@@ -38,7 +38,8 @@ func TCPProxy(conn net.Conn, config config.Config, data []byte) {
 func toRemote(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
 	defer wsconn.Close()
 	defer tcpconn.Close()
-	buffer := make([]byte, constant.BufferSize)
+	buffer := config.BytePool.Get()
+	defer config.BytePool.Put(buffer)
 	for {
 		tcpconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
 		n, err := tcpconn.Read(buffer)
