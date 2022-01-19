@@ -17,7 +17,8 @@ import (
 
 func connectServer(network string, host string, port string, config config.Config) net.Conn {
 	url := fmt.Sprintf("%s://%s%s", config.Scheme, config.ServerAddr, constant.WSPath)
-	c, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
+	dialer := &ws.Dialer{ReadBufferSize: constant.BufferSize, WriteBufferSize: constant.BufferSize, Timeout: time.Duration(constant.Timeout)}
+	c, _, _, err := dialer.Dial(context.Background(), url)
 	if err != nil {
 		log.Printf("[client] failed to dial websocket %s %v", url, err)
 		return nil
