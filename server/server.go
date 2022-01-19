@@ -45,7 +45,8 @@ func Start(config config.Config) {
 	})
 
 	http.HandleFunc("/sys", func(w http.ResponseWriter, req *http.Request) {
-		resp := fmt.Sprintf("download %v upload %v", bytesize.New(float64(counter.TotalWrittenBytes)).String(), bytesize.New(float64(counter.TotalReadBytes)).String())
+		resp := fmt.Sprintf("download %v upload %v \r\n", bytesize.New(float64(counter.TotalWrittenBytes)).String(), bytesize.New(float64(counter.TotalReadBytes)).String())
+		resp = resp + fmt.Sprintf("total connections %v current connections %v", strconv.FormatInt(int64(counter.TotalConnections), 10), strconv.FormatInt(int64(counter.CurrentConnections), 10))
 		io.WriteString(w, resp)
 	})
 
@@ -68,6 +69,9 @@ func wsHandler(wsconn net.Conn, config config.Config) {
 		log.Printf("[server] failed to dial server %v", err)
 		return
 	}
+	counter.IncrConnections(1)
+	counter.IncrCurrentConnections(1)
+	defer counter.DecrCurrentConnections(1)
 	// forward data
 	go toRemote(config, wsconn, conn)
 	toLocal(config, wsconn, conn)
