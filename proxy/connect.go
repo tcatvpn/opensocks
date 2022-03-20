@@ -36,7 +36,7 @@ func connectServer(network string, host string, port string, config config.Confi
 		log.Printf("[client] failed to encode request %v", err)
 		return nil
 	}
-	if config.Obfuscate {
+	if config.Obfs {
 		data = cipher.XOR(data)
 	}
 	wserr := wsutil.WriteClientText(c, data)

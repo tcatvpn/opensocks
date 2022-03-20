@@ -83,7 +83,7 @@ func handshake(config config.Config, conn net.Conn) (bool, proxy.RequestAddr) {
 	if err != nil {
 		return false, req
 	}
-	if config.Obfuscate {
+	if config.Obfs {
 		buffer = cipher.XOR(buffer)
 	}
 	if req.UnmarshalBinary(buffer) != nil {
@@ -114,7 +114,7 @@ func toLocal(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
 			break
 		}
 		var b []byte
-		if config.Obfuscate {
+		if config.Obfs {
 			b = cipher.XOR(buffer[:n])
 		} else {
 			b = buffer[:n]
@@ -134,7 +134,7 @@ func toRemote(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		if config.Obfuscate {
+		if config.Obfs {
 			buffer = cipher.XOR(buffer)
 		}
 		counter.IncrReadBytes(n)

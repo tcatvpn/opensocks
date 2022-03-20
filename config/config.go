@@ -12,7 +12,7 @@ type Config struct {
 	Scheme     string
 	ServerMode bool
 	Bypass     bool
-	Obfuscate  bool
+	Obfs       bool
 	BytePool   *bpool.BytePool
 }
 

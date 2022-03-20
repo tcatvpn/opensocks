@@ -92,7 +92,7 @@ func (relay *UDPRelay) toRemote() {
 			relay.headerMap.Store(key, header)
 			go relay.toLocal(wsconn, cliAddr)
 		}
-		if relay.Config.Obfuscate {
+		if relay.Config.Obfs {
 			data = cipher.XOR(data)
 		}
 		counter.IncrWrittenBytes(n)
@@ -111,7 +111,7 @@ func (relay *UDPRelay) toLocal(wsconn net.Conn, cliAddr *net.UDPAddr) {
 			break
 		}
 		if header, ok := relay.headerMap.Load(key); ok {
-			if relay.Config.Obfuscate {
+			if relay.Config.Obfs {
 				buffer = cipher.XOR(buffer)
 			}
 			var data bytes.Buffer
@@ -162,7 +162,7 @@ func (proxy *UDPRelay) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, d
 	case constant.Ipv6Address:
 		{
 			dstAddr = &net.UDPAddr{
-				IP:   net.IP(b[4:19]),
+				IP:   net.IP(b[4:20]),
 				Port: int(b[20])<<8 | int(b[21]),
 			}
 			header = b[0:22]

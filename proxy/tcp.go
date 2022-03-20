@@ -47,7 +47,7 @@ func toRemote(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
 			break
 		}
 		var b []byte
-		if config.Obfuscate {
+		if config.Obfs {
 			b = cipher.XOR(buffer[:n])
 		} else {
 			b = buffer[:n]
@@ -67,7 +67,7 @@ func toLocal(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		if config.Obfuscate {
+		if config.Obfs {
 			buffer = cipher.XOR(buffer)
 		}
 		counter.IncrReadBytes(n)
@@ -90,7 +90,7 @@ func getAddr(b []byte) (host string, port string) {
 	case constant.FqdnAddress:
 		host = string(b[5 : len-2])
 	case constant.Ipv6Address:
-		host = net.IP(b[4:19]).String()
+		host = net.IP(b[4:20]).String()
 	default:
 		return "", ""
 	}
