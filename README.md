@@ -6,6 +6,7 @@ A socks5 proxy over websocket.
 [![Go Report Card](https://goreportcard.com/badge/github.com/net-byte/opensocks)](https://goreportcard.com/report/github.com/net-byte/opensocks)
 ![image](https://img.shields.io/badge/License-MIT-orange)
 ![image](https://img.shields.io/badge/License-Anti--996-red)
+![image](https://img.shields.io/github/downloads/net-byte/opensocks/total.svg)
 
 # Usage
 ```
