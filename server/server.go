@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
+	"github.com/hashicorp/yamux"
 	"github.com/inhies/go-bytesize"
 	"github.com/net-byte/opensocks/common/cipher"
-	"github.com/net-byte/opensocks/common/constant"
+	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/proxy"
@@ -22,7 +22,7 @@ import (
 
 // Start server
 func Start(config config.Config) {
-	http.HandleFunc(constant.WSPath, func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(enum.WSPath, func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
 			log.Printf("[server] failed to upgrade http %v", err)
@@ -46,7 +46,6 @@ func Start(config config.Config) {
 
 	http.HandleFunc("/sys", func(w http.ResponseWriter, req *http.Request) {
 		resp := fmt.Sprintf("download %v upload %v \r\n", bytesize.New(float64(counter.TotalWrittenBytes)).String(), bytesize.New(float64(counter.TotalReadBytes)).String())
-		resp = resp + fmt.Sprintf("total connections %v current connections %v", strconv.FormatInt(int64(counter.TotalConnections), 10), strconv.FormatInt(int64(counter.CurrentConnections), 10))
 		io.WriteString(w, resp)
 	})
 
@@ -54,44 +53,58 @@ func Start(config config.Config) {
 	http.ListenAndServe(config.ServerAddr, nil)
 }
 
-func wsHandler(wsconn net.Conn, config config.Config) {
-	// handshake
-	ok, req := handshake(config, wsconn)
-	if !ok {
-		wsconn.Close()
-		return
-	}
-	// connect real server
-	// log.Printf("[server] dial to server %v %v:%v", req.Network, req.Host, req.Port)
-	conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(constant.Timeout)*time.Second)
+func wsHandler(w net.Conn, config config.Config) {
+	defer w.Close()
+	session, err := yamux.Server(w, nil)
 	if err != nil {
-		wsconn.Close()
-		log.Printf("[server] failed to dial server %v", err)
+		log.Printf("[server] could not initialise yamux session: %s", err)
 		return
 	}
-	counter.IncrConnections(1)
-	counter.IncrCurrentConnections(1)
-	defer counter.DecrCurrentConnections(1)
-	// forward data
-	go toRemote(config, wsconn, conn)
-	toLocal(config, wsconn, conn)
+	for {
+		stream, err := session.AcceptStream()
+		if err != nil {
+			log.Printf("[server] failed to accept steam %v", err)
+			break
+		}
+		go func() {
+			// handshake
+			ok, req := handshake(config, stream)
+			if !ok {
+				stream.Close()
+				return
+			}
+			log.Printf("[server] dial to server %v %v:%v", req.Network, req.Host, req.Port)
+			conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(enum.Timeout)*time.Second)
+			if err != nil {
+				stream.Close()
+				log.Printf("[server] failed to dial server %v", err)
+				return
+			}
+			// forward data
+			go toServer(config, stream, conn)
+			toClient(config, stream, conn)
+		}()
+	}
 }
 
-func handshake(config config.Config, conn net.Conn) (bool, proxy.RequestAddr) {
+func handshake(config config.Config, stream net.Conn) (bool, proxy.RequestAddr) {
 	var req proxy.RequestAddr
-	buffer, err := wsutil.ReadClientText(conn)
-	if err != nil {
+	buffer := config.BytePool.Get()
+	defer config.BytePool.Put(buffer)
+	n, err := stream.Read(buffer)
+	if err != nil || n == 0 {
 		return false, req
 	}
+	b := buffer[:n]
 	if config.Obfs {
-		buffer = cipher.XOR(buffer)
+		b = cipher.XOR(b)
 	}
-	if req.UnmarshalBinary(buffer) != nil {
+	if req.UnmarshalBinary(b) != nil {
 		log.Printf("[server] failed to decode request %v", err)
 		return false, req
 	}
 	reqTime, _ := strconv.ParseInt(req.Timestamp, 10, 64)
-	if time.Now().Unix()-reqTime > int64(constant.Timeout) {
+	if time.Now().Unix()-reqTime > int64(enum.Timeout) {
 		log.Printf("[server] timestamp expired %v", reqTime)
 		return false, req
 	}
@@ -102,42 +115,48 @@ func handshake(config config.Config, conn net.Conn) (bool, proxy.RequestAddr) {
 	return true, req
 }
 
-func toLocal(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
-	defer wsconn.Close()
-	defer tcpconn.Close()
+func toClient(config config.Config, stream net.Conn, conn net.Conn) {
+	defer stream.Close()
+	defer conn.Close()
 	buffer := config.BytePool.Get()
 	defer config.BytePool.Put(buffer)
 	for {
-		tcpconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
-		n, err := tcpconn.Read(buffer)
+		conn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
+		n, err := conn.Read(buffer)
 		if err != nil || err == io.EOF || n == 0 {
 			break
 		}
-		var b []byte
+		b := buffer[:n]
 		if config.Obfs {
-			b = cipher.XOR(buffer[:n])
-		} else {
-			b = buffer[:n]
+			b = cipher.XOR(b)
+		}
+		_, err = stream.Write(b)
+		if err != nil {
+			break
 		}
 		counter.IncrWrittenBytes(n)
-		wsutil.WriteServerBinary(wsconn, b)
 	}
 }
 
-func toRemote(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
-	defer wsconn.Close()
-	defer tcpconn.Close()
+func toServer(config config.Config, stream net.Conn, conn net.Conn) {
+	defer stream.Close()
+	defer conn.Close()
+	buffer := config.BytePool.Get()
+	defer config.BytePool.Put(buffer)
 	for {
-		wsconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
-		buffer, err := wsutil.ReadClientBinary(wsconn)
-		n := len(buffer)
-		if err != nil || err == io.EOF || n == 0 {
+		stream.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
+		n, err := stream.Read(buffer)
+		if err != nil || n == 0 {
 			break
 		}
+		b := buffer[:n]
 		if config.Obfs {
-			buffer = cipher.XOR(buffer)
+			b = cipher.XOR(b)
+		}
+		_, err = conn.Write(b)
+		if err != nil {
+			break
 		}
 		counter.IncrReadBytes(n)
-		tcpconn.Write(buffer[:])
 	}
 }

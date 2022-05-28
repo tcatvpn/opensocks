@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/net-byte/opensocks/common/constant"
+	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/proxy"
 )
@@ -13,12 +13,22 @@ import (
 //Start client
 func Start(config config.Config) {
 	log.Printf("opensocks [tcp] client started on %s", config.LocalAddr)
-	udpConn := handleUDP(config)
-	handleTCP(config, udpConn)
+	tproxy := &proxy.TCPProxy{Config: config}
+	uproxy := &proxy.UDPProxy{Config: config}
+	cli := &Client{config: config, tproxy: tproxy, uproxy: uproxy}
+	cli.start()
 }
 
-func handleTCP(config config.Config, udpConn *net.UDPConn) {
-	l, err := net.Listen("tcp", config.LocalAddr)
+type Client struct {
+	config config.Config
+	tproxy *proxy.TCPProxy
+	uproxy *proxy.UDPProxy
+}
+
+func (c *Client) start() {
+	udpRelay := &proxy.UDPRelay{Config: c.config}
+	udpConn := udpRelay.Start()
+	l, err := net.Listen("tcp", c.config.LocalAddr)
 	if err != nil {
 		log.Panicf("[tcp] failed to listen tcp %v", err)
 	}
@@ -27,25 +37,20 @@ func handleTCP(config config.Config, udpConn *net.UDPConn) {
 		if err != nil {
 			continue
 		}
-		go tcpHandler(tcpConn, udpConn, config)
+		go c.handler(tcpConn, udpConn)
 	}
 }
 
-func handleUDP(config config.Config) *net.UDPConn {
-	udpRelay := &proxy.UDPRelay{Config: config}
-	return udpRelay.Start()
-}
-
-func tcpHandler(tcpConn net.Conn, udpConn *net.UDPConn, config config.Config) {
-	buf := config.BytePool.Get()
-	defer config.BytePool.Put(buf)
+func (c *Client) handler(tcpConn net.Conn, udpConn *net.UDPConn) {
+	buf := c.config.BytePool.Get()
+	defer c.config.BytePool.Put(buf)
 	//read version
 	n, err := tcpConn.Read(buf[0:])
 	if err != nil || err == io.EOF {
 		return
 	}
 	b := buf[0:n]
-	if b[0] != constant.Socks5Version {
+	if b[0] != enum.Socks5Version {
 		return
 	}
 	//no auth
@@ -57,17 +62,17 @@ func tcpHandler(tcpConn net.Conn, udpConn *net.UDPConn, config config.Config) {
 	}
 	b = buf[0:n]
 	switch b[1] {
-	case constant.ConnectCommand:
-		proxy.TCPProxy(tcpConn, config, b)
+	case enum.ConnectCommand:
+		c.tproxy.Proxy(tcpConn, b)
 		return
-	case constant.AssociateCommand:
-		proxy.UDPProxy(tcpConn, udpConn, config)
+	case enum.AssociateCommand:
+		c.uproxy.Proxy(tcpConn, udpConn)
 		return
-	case constant.BindCommand:
-		proxy.ResponseTCP(tcpConn, constant.CommandNotSupported)
+	case enum.BindCommand:
+		proxy.ResponseTCP(tcpConn, enum.CommandNotSupported)
 		return
 	default:
-		proxy.ResponseTCP(tcpConn, constant.CommandNotSupported)
+		proxy.ResponseTCP(tcpConn, enum.CommandNotSupported)
 		return
 	}
 }

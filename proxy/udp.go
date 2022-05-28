@@ -9,17 +9,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gobwas/ws/wsutil"
+	"github.com/hashicorp/yamux"
 	"github.com/net-byte/opensocks/common/cipher"
-	"github.com/net-byte/opensocks/common/constant"
+	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 )
 
-func UDPProxy(tcpConn net.Conn, udpConn *net.UDPConn, config config.Config) {
+type UDPProxy struct {
+	Config config.Config
+}
+
+func (u *UDPProxy) Proxy(tcpConn net.Conn, udpConn *net.UDPConn) {
 	defer tcpConn.Close()
 	if udpConn == nil {
-		log.Printf("[udp] failed to start udp server on %v", config.LocalAddr)
+		log.Printf("[udp] failed to start udp server on %v", u.Config.LocalAddr)
 		return
 	}
 	bindAddr, _ := net.ResolveUDPAddr("udp", udpConn.LocalAddr().String())
@@ -27,13 +31,13 @@ func UDPProxy(tcpConn net.Conn, udpConn *net.UDPConn, config config.Config) {
 	ResponseUDP(tcpConn, bindAddr)
 	// keep client alive
 	done := make(chan bool)
-	go keepTCPAlive(tcpConn.(*net.TCPConn), done)
+	go u.keepTCPAlive(tcpConn.(*net.TCPConn), done)
 	<-done
 }
 
-func keepTCPAlive(tcpConn *net.TCPConn, done chan<- bool) {
+func (u *UDPProxy) keepTCPAlive(tcpConn *net.TCPConn, done chan<- bool) {
 	tcpConn.SetKeepAlive(true)
-	buf := make([]byte, constant.BufferSize)
+	buf := make([]byte, enum.BufferSize)
 	for {
 		_, err := tcpConn.Read(buf[0:])
 		if err != nil {
@@ -48,84 +52,113 @@ type UDPRelay struct {
 	UDPConn   *net.UDPConn
 	Config    config.Config
 	headerMap sync.Map
-	wsconnMap sync.Map
+	streamMap sync.Map
+	Session   *yamux.Session
+	Lock      sync.Mutex
 }
 
-func (relay *UDPRelay) Start() *net.UDPConn {
-	udpAddr, _ := net.ResolveUDPAddr("udp", relay.Config.LocalAddr)
+func (u *UDPRelay) Start() *net.UDPConn {
+	udpAddr, _ := net.ResolveUDPAddr("udp", u.Config.LocalAddr)
 	udpConn, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
 		log.Printf("[udp] failed to listen udp %v", err)
 		return nil
 	}
-	relay.UDPConn = udpConn
-	go relay.toRemote()
-	log.Printf("opensocks [udp] client started on %v", relay.Config.LocalAddr)
-	return relay.UDPConn
+	u.UDPConn = udpConn
+	go u.toServer()
+	log.Printf("opensocks [udp] client started on %v", u.Config.LocalAddr)
+	return u.UDPConn
 }
 
-func (relay *UDPRelay) toRemote() {
-	defer relay.UDPConn.Close()
-	buf := relay.Config.BytePool.Get()
-	defer relay.Config.BytePool.Put(buf)
+func (u *UDPRelay) toServer() {
+	defer u.UDPConn.Close()
+	buf := u.Config.BytePool.Get()
+	defer u.Config.BytePool.Put(buf)
 	for {
-		relay.UDPConn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
-		n, cliAddr, err := relay.UDPConn.ReadFromUDP(buf)
+		u.UDPConn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
+		n, cliAddr, err := u.UDPConn.ReadFromUDP(buf)
 		if err != nil || err == io.EOF || n == 0 {
 			continue
 		}
 		b := buf[:n]
-		dstAddr, header, data := relay.getAddr(b)
+		dstAddr, header, data := u.getAddr(b)
 		if dstAddr == nil || header == nil || data == nil {
 			continue
 		}
 		key := cliAddr.String()
-		var wsconn net.Conn
-		if value, ok := relay.wsconnMap.Load(key); ok {
-			wsconn = value.(net.Conn)
-		} else {
-			wsconn = connectServer("udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), relay.Config)
-			if wsconn == nil {
+		var stream net.Conn
+		if value, ok := u.streamMap.Load(key); !ok {
+			if u.Session == nil {
+				u.Lock.Lock()
+				var err error
+				wsconn := connectServer(u.Config)
+				if wsconn == nil {
+					continue
+				}
+				u.Session, err = yamux.Client(wsconn, nil)
+				if err != nil || u.Session == nil {
+					log.Println(err)
+					continue
+				}
+				u.Lock.Unlock()
+			}
+			stream, err = u.Session.Open()
+			if err != nil {
+				u.Session = nil
+				log.Println(err)
 				continue
 			}
-			relay.wsconnMap.Store(key, wsconn)
-			relay.headerMap.Store(key, header)
-			go relay.toLocal(wsconn, cliAddr)
+			ok := handshake(stream, "udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), u.Config.Key, u.Config.Obfs)
+			if !ok {
+				u.Session = nil
+				log.Println("[udp] failed to handshake")
+				continue
+			}
+			u.streamMap.Store(key, stream)
+			u.headerMap.Store(key, header)
+			go u.toClient(stream, cliAddr)
+		} else {
+			stream = value.(net.Conn)
 		}
-		if relay.Config.Obfs {
+		if u.Config.Obfs {
 			data = cipher.XOR(data)
 		}
+		stream.Write(data)
 		counter.IncrWrittenBytes(n)
-		wsutil.WriteClientBinary(wsconn, data)
 	}
 }
 
-func (relay *UDPRelay) toLocal(wsconn net.Conn, cliAddr *net.UDPAddr) {
-	defer wsconn.Close()
+func (u *UDPRelay) toClient(stream net.Conn, cliAddr *net.UDPAddr) {
+	defer stream.Close()
 	key := cliAddr.String()
+	buffer := u.Config.BytePool.Get()
+	defer u.Config.BytePool.Put(buffer)
 	for {
-		wsconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
-		buffer, err := wsutil.ReadServerBinary(wsconn)
-		n := len(buffer)
-		if err != nil || err == io.EOF || n == 0 {
+		stream.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
+		n, err := stream.Read(buffer)
+		if err != nil || n == 0 {
 			break
 		}
-		if header, ok := relay.headerMap.Load(key); ok {
-			if relay.Config.Obfs {
-				buffer = cipher.XOR(buffer)
+		if header, ok := u.headerMap.Load(key); ok {
+			b := buffer[:n]
+			if u.Config.Obfs {
+				b = cipher.XOR(b)
 			}
 			var data bytes.Buffer
 			data.Write(header.([]byte))
-			data.Write(buffer)
+			data.Write(b)
+			_, err = u.UDPConn.WriteToUDP(data.Bytes(), cliAddr)
+			if err != nil {
+				break
+			}
 			counter.IncrReadBytes(n)
-			relay.UDPConn.WriteToUDP(data.Bytes(), cliAddr)
 		}
 	}
-	relay.headerMap.Delete(key)
-	relay.wsconnMap.Delete(key)
+	u.headerMap.Delete(key)
+	u.streamMap.Delete(key)
 }
 
-func (proxy *UDPRelay) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, data []byte) {
+func (u *UDPRelay) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, data []byte) {
 	/*
 	   +----+------+------+----------+----------+----------+
 	   |RSV | FRAG | ATYP | DST.ADDR | DST.PORT |   DATA   |
@@ -138,14 +171,14 @@ func (proxy *UDPRelay) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, d
 		return nil, nil, nil
 	}
 	switch b[3] {
-	case constant.Ipv4Address:
+	case enum.Ipv4Address:
 		dstAddr = &net.UDPAddr{
 			IP:   net.IPv4(b[4], b[5], b[6], b[7]),
 			Port: int(b[8])<<8 | int(b[9]),
 		}
 		header = b[0:10]
 		data = b[10:]
-	case constant.FqdnAddress:
+	case enum.FqdnAddress:
 		domainLength := int(b[4])
 		domain := string(b[5 : 5+domainLength])
 		ipAddr, err := net.ResolveIPAddr("ip", domain)
@@ -159,7 +192,7 @@ func (proxy *UDPRelay) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, d
 		}
 		header = b[0 : 7+domainLength]
 		data = b[7+domainLength:]
-	case constant.Ipv6Address:
+	case enum.Ipv6Address:
 		{
 			dstAddr = &net.UDPAddr{
 				IP:   net.IP(b[4:20]),

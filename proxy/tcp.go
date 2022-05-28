@@ -1,81 +1,117 @@
 package proxy
 
 import (
-	"io"
+	"log"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 
-	"github.com/gobwas/ws/wsutil"
+	"github.com/hashicorp/yamux"
 	"github.com/net-byte/opensocks/common/cipher"
-	"github.com/net-byte/opensocks/common/constant"
+	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 )
 
-func TCPProxy(conn net.Conn, config config.Config, data []byte) {
-	host, port := getAddr(data)
+type TCPProxy struct {
+	Config  config.Config
+	Session *yamux.Session
+	Lock    sync.Mutex
+}
+
+func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
+	host, port := t.getAddr(data)
 	if host == "" || port == "" {
 		return
 	}
 	// bypass private ip
-	if config.Bypass && net.ParseIP(host) != nil && net.ParseIP(host).IsPrivate() {
-		DirectProxy(conn, host, port, config)
+	if t.Config.Bypass && net.ParseIP(host) != nil && net.ParseIP(host).IsPrivate() {
+		DirectProxy(conn, host, port, t.Config)
 		return
 	}
-
-	wsconn := connectServer("tcp", host, port, config)
-	if wsconn == nil {
-		ResponseTCP(conn, constant.ConnectionRefused)
+	if t.Session == nil {
+		t.Lock.Lock()
+		var err error
+		wsconn := connectServer(t.Config)
+		if wsconn == nil {
+			ResponseTCP(conn, enum.ConnectionRefused)
+			return
+		}
+		t.Session, err = yamux.Client(wsconn, nil)
+		if err != nil || t.Session == nil {
+			log.Println(err)
+			ResponseTCP(conn, enum.ConnectionRefused)
+			return
+		}
+		t.Lock.Unlock()
+	}
+	stream, err := t.Session.Open()
+	if err != nil {
+		t.Session = nil
+		log.Println(err)
+		ResponseTCP(conn, enum.ConnectionRefused)
 		return
 	}
-
-	ResponseTCP(conn, constant.SuccessReply)
-	go toRemote(config, wsconn, conn)
-	go toLocal(config, wsconn, conn)
+	ok := handshake(stream, "tcp", host, port, t.Config.Key, t.Config.Obfs)
+	if !ok {
+		t.Session = nil
+		log.Println("[tcp] failed to handshake")
+		ResponseTCP(conn, enum.ConnectionRefused)
+		return
+	}
+	ResponseTCP(conn, enum.SuccessReply)
+	go t.toServer(stream, conn)
+	t.toClient(stream, conn)
 }
 
-func toRemote(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
-	defer wsconn.Close()
+func (t *TCPProxy) toServer(stream net.Conn, tcpconn net.Conn) {
+	defer stream.Close()
 	defer tcpconn.Close()
-	buffer := config.BytePool.Get()
-	defer config.BytePool.Put(buffer)
+	buffer := t.Config.BytePool.Get()
+	defer t.Config.BytePool.Put(buffer)
 	for {
-		tcpconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
+		tcpconn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := tcpconn.Read(buffer)
-		if err != nil || err == io.EOF || n == 0 {
+		if err != nil || n == 0 {
 			break
 		}
-		var b []byte
-		if config.Obfs {
-			b = cipher.XOR(buffer[:n])
-		} else {
-			b = buffer[:n]
+		b := buffer[:n]
+		if t.Config.Obfs {
+			b = cipher.XOR(b)
+		}
+		_, err = stream.Write(b)
+		if err != nil {
+			break
 		}
 		counter.IncrWrittenBytes(n)
-		wsutil.WriteClientBinary(wsconn, b)
 	}
 }
 
-func toLocal(config config.Config, wsconn net.Conn, tcpconn net.Conn) {
-	defer wsconn.Close()
+func (t *TCPProxy) toClient(stream net.Conn, tcpconn net.Conn) {
+	defer stream.Close()
 	defer tcpconn.Close()
+	buffer := t.Config.BytePool.Get()
+	defer t.Config.BytePool.Put(buffer)
 	for {
-		wsconn.SetReadDeadline(time.Now().Add(time.Duration(constant.Timeout) * time.Second))
-		buffer, err := wsutil.ReadServerBinary(wsconn)
-		n := len(buffer)
-		if err != nil || err == io.EOF || n == 0 {
+		stream.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
+		n, err := stream.Read(buffer)
+		if err != nil || n == 0 {
 			break
 		}
-		if config.Obfs {
-			buffer = cipher.XOR(buffer)
+		b := buffer[:n]
+		if t.Config.Obfs {
+			b = cipher.XOR(b)
+		}
+		_, err = tcpconn.Write(b)
+		if err != nil {
+			break
 		}
 		counter.IncrReadBytes(n)
-		tcpconn.Write(buffer[:])
 	}
 }
 
-func getAddr(b []byte) (host string, port string) {
+func (t *TCPProxy) getAddr(b []byte) (host string, port string) {
 	/**
 	  +----+-----+-------+------+----------+----------+
 	  |VER | CMD |  RSV  | ATYP | DST.ADDR | DST.PORT |
@@ -85,11 +121,11 @@ func getAddr(b []byte) (host string, port string) {
 	*/
 	len := len(b)
 	switch b[3] {
-	case constant.Ipv4Address:
+	case enum.Ipv4Address:
 		host = net.IPv4(b[4], b[5], b[6], b[7]).String()
-	case constant.FqdnAddress:
+	case enum.FqdnAddress:
 		host = string(b[5 : len-2])
-	case constant.Ipv6Address:
+	case enum.Ipv6Address:
 		host = net.IP(b[4:20]).String()
 	default:
 		return "", ""

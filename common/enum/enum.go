@@ -1,4 +1,4 @@
-package constant
+package enum
 
 const (
 	Socks5Version = uint8(5)
@@ -36,6 +36,6 @@ const (
 
 const (
 	Timeout    int    = 60
-	BufferSize int    = 8 * 1024
+	BufferSize int    = 64 * 1024
 	WSPath     string = "/way-to-freedom"
 )
