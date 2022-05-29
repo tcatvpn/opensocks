@@ -18,5 +18,5 @@ type Config struct {
 
 func (config *Config) Init() {
 	cipher.GenerateKey(config.Key)
-	config.BytePool = bpool.NewBytePool(128, 8*1024)
+	config.BytePool = bpool.NewBytePool(128, 256*1024)
 }
