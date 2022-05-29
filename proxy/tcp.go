@@ -31,8 +31,8 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 		DirectProxy(conn, host, port, t.Config)
 		return
 	}
+	t.Lock.Lock()
 	if t.Session == nil {
-		t.Lock.Lock()
 		var err error
 		wsconn := connectServer(t.Config)
 		if wsconn == nil {
@@ -47,8 +47,8 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 			ResponseTCP(conn, enum.ConnectionRefused)
 			return
 		}
-		t.Lock.Unlock()
 	}
+	t.Lock.Unlock()
 	stream, err := t.Session.Open()
 	if err != nil {
 		t.Session = nil

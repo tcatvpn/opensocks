@@ -89,8 +89,8 @@ func (u *UDPRelay) toServer() {
 		key := cliAddr.String()
 		var stream net.Conn
 		if value, ok := u.streamMap.Load(key); !ok {
+			u.Lock.Lock()
 			if u.Session == nil {
-				u.Lock.Lock()
 				var err error
 				wsconn := connectServer(u.Config)
 				if wsconn == nil {
@@ -103,8 +103,8 @@ func (u *UDPRelay) toServer() {
 					u.Lock.Unlock()
 					continue
 				}
-				u.Lock.Unlock()
 			}
+			u.Lock.Unlock()
 			stream, err = u.Session.Open()
 			if err != nil {
 				u.Session = nil
