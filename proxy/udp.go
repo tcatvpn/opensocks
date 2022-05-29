@@ -14,6 +14,7 @@ import (
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
+	"github.com/net-byte/opensocks/proto"
 )
 
 type UDPProxy struct {
@@ -93,11 +94,13 @@ func (u *UDPRelay) toServer() {
 				var err error
 				wsconn := connectServer(u.Config)
 				if wsconn == nil {
+					u.Lock.Unlock()
 					continue
 				}
 				u.Session, err = yamux.Client(wsconn, nil)
 				if err != nil || u.Session == nil {
 					log.Println(err)
+					u.Lock.Unlock()
 					continue
 				}
 				u.Lock.Unlock()
@@ -123,16 +126,20 @@ func (u *UDPRelay) toServer() {
 		if u.Config.Obfs {
 			data = cipher.XOR(data)
 		}
-		stream.Write(data)
+		edate, err := proto.Encode(data)
+		if err != nil {
+			break
+		}
+		stream.Write(edate)
 		counter.IncrWrittenBytes(n)
 	}
 }
 
 func (u *UDPRelay) toClient(stream net.Conn, cliAddr *net.UDPAddr) {
-	defer stream.Close()
 	key := cliAddr.String()
 	buffer := u.Config.BytePool.Get()
 	defer u.Config.BytePool.Put(buffer)
+	defer stream.Close()
 	for {
 		stream.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := stream.Read(buffer)

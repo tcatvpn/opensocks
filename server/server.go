@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -17,6 +18,7 @@ import (
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
+	"github.com/net-byte/opensocks/proto"
 	"github.com/net-byte/opensocks/proxy"
 )
 
@@ -32,7 +34,7 @@ func Start(config config.Config) {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		io.WriteString(w, "Hello，世界！")
+		io.WriteString(w, "Hello, world!\n")
 	})
 
 	http.HandleFunc("/ip", func(w http.ResponseWriter, req *http.Request) {
@@ -57,7 +59,7 @@ func wsHandler(w net.Conn, config config.Config) {
 	defer w.Close()
 	session, err := yamux.Server(w, nil)
 	if err != nil {
-		log.Printf("[server] could not initialise yamux session: %s", err)
+		log.Printf("[server] failed to initialise yamux session: %s", err)
 		return
 	}
 	for {
@@ -67,35 +69,32 @@ func wsHandler(w net.Conn, config config.Config) {
 			break
 		}
 		go func() {
+			defer stream.Close()
+			reader := bufio.NewReader(stream)
 			// handshake
-			ok, req := handshake(config, stream)
+			ok, req := handshake(config, reader)
 			if !ok {
-				stream.Close()
 				return
 			}
 			log.Printf("[server] dial to server %v %v:%v", req.Network, req.Host, req.Port)
 			conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(enum.Timeout)*time.Second)
 			if err != nil {
-				stream.Close()
 				log.Printf("[server] failed to dial server %v", err)
 				return
 			}
 			// forward data
-			go toServer(config, stream, conn)
+			go toServer(config, reader, conn)
 			toClient(config, stream, conn)
 		}()
 	}
 }
 
-func handshake(config config.Config, stream net.Conn) (bool, proxy.RequestAddr) {
+func handshake(config config.Config, reader *bufio.Reader) (bool, proxy.RequestAddr) {
 	var req proxy.RequestAddr
-	buffer := config.BytePool.Get()
-	defer config.BytePool.Put(buffer)
-	n, err := stream.Read(buffer)
-	if err != nil || n == 0 {
+	b, _, err := proto.Decode(reader)
+	if err != nil {
 		return false, req
 	}
-	b := buffer[:n]
 	if config.Obfs {
 		b = cipher.XOR(b)
 	}
@@ -116,7 +115,6 @@ func handshake(config config.Config, stream net.Conn) (bool, proxy.RequestAddr) 
 }
 
 func toClient(config config.Config, stream net.Conn, conn net.Conn) {
-	defer stream.Close()
 	defer conn.Close()
 	buffer := config.BytePool.Get()
 	defer config.BytePool.Put(buffer)
@@ -138,18 +136,13 @@ func toClient(config config.Config, stream net.Conn, conn net.Conn) {
 	}
 }
 
-func toServer(config config.Config, stream net.Conn, conn net.Conn) {
-	defer stream.Close()
+func toServer(config config.Config, reader *bufio.Reader, conn net.Conn) {
 	defer conn.Close()
-	buffer := config.BytePool.Get()
-	defer config.BytePool.Put(buffer)
 	for {
-		stream.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
-		n, err := stream.Read(buffer)
-		if err != nil || n == 0 {
+		b, n, err := proto.Decode(reader)
+		if err != nil {
 			break
 		}
-		b := buffer[:n]
 		if config.Obfs {
 			b = cipher.XOR(b)
 		}
@@ -157,6 +150,6 @@ func toServer(config config.Config, stream net.Conn, conn net.Conn) {
 		if err != nil {
 			break
 		}
-		counter.IncrReadBytes(n)
+		counter.IncrReadBytes(int(n))
 	}
 }
