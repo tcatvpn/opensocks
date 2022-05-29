@@ -23,18 +23,18 @@ func Encode(data []byte) ([]byte, error) {
 func Decode(reader *bufio.Reader) ([]byte, int32, error) {
 	len, _ := reader.Peek(4)
 	blen := bytes.NewBuffer(len)
-	var dLen int32
-	err := binary.Read(blen, binary.LittleEndian, &dLen)
+	var dlen int32
+	err := binary.Read(blen, binary.LittleEndian, &dlen)
 	if err != nil {
 		return nil, 0, err
 	}
-	if int32(reader.Buffered()) < dLen+4 {
+	if int32(reader.Buffered()) < dlen+4 {
 		return nil, 0, err
 	}
-	pack := make([]byte, 4+dLen)
+	pack := make([]byte, 4+dlen)
 	_, err = reader.Read(pack)
 	if err != nil {
 		return nil, 0, err
 	}
-	return pack[4:], dLen, nil
+	return pack[4:], dlen, nil
 }
