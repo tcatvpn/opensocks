@@ -62,11 +62,12 @@ func wsHandler(w net.Conn, config config.Config) {
 		log.Printf("[server] failed to initialise yamux session: %s", err)
 		return
 	}
+	defer session.Close()
 	for {
 		stream, err := session.AcceptStream()
 		if err != nil {
 			log.Printf("[server] failed to accept steam %v", err)
-			continue
+			break
 		}
 		go func() {
 			defer stream.Close()
