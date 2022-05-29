@@ -66,7 +66,7 @@ func wsHandler(w net.Conn, config config.Config) {
 		stream, err := session.AcceptStream()
 		if err != nil {
 			log.Printf("[server] failed to accept steam %v", err)
-			break
+			continue
 		}
 		go func() {
 			defer stream.Close()
@@ -121,7 +121,7 @@ func toClient(config config.Config, stream net.Conn, conn net.Conn) {
 	for {
 		conn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := conn.Read(buffer)
-		if err != nil || err == io.EOF || n == 0 {
+		if err != nil || n == 0 {
 			break
 		}
 		b := buffer[:n]
