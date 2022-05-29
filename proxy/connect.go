@@ -12,6 +12,7 @@ import (
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
+	"github.com/net-byte/opensocks/proto"
 )
 
 func connectServer(config config.Config) net.Conn {
@@ -42,7 +43,12 @@ func handshake(stream net.Conn, network string, host string, port string, key st
 	if obfs {
 		data = cipher.XOR(data)
 	}
-	_, err = stream.Write(data)
+	edate, err := proto.Encode(data)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	_, err = stream.Write(edate)
 	if err != nil {
 		log.Println(err)
 		return false

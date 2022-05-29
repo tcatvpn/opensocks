@@ -12,6 +12,7 @@ import (
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
+	"github.com/net-byte/opensocks/proto"
 )
 
 type TCPProxy struct {
@@ -35,11 +36,13 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 		var err error
 		wsconn := connectServer(t.Config)
 		if wsconn == nil {
+			t.Lock.Unlock()
 			ResponseTCP(conn, enum.ConnectionRefused)
 			return
 		}
 		t.Session, err = yamux.Client(wsconn, nil)
 		if err != nil || t.Session == nil {
+			t.Lock.Unlock()
 			log.Println(err)
 			ResponseTCP(conn, enum.ConnectionRefused)
 			return
@@ -80,7 +83,11 @@ func (t *TCPProxy) toServer(stream net.Conn, tcpconn net.Conn) {
 		if t.Config.Obfs {
 			b = cipher.XOR(b)
 		}
-		_, err = stream.Write(b)
+		edate, err := proto.Encode(b)
+		if err != nil {
+			break
+		}
+		_, err = stream.Write(edate)
 		if err != nil {
 			break
 		}
