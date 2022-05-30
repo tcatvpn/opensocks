@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/yamux"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/proto"
+	"github.com/xtaci/smux"
 )
 
 type UDPProxy struct {
@@ -54,7 +54,7 @@ type UDPRelay struct {
 	Config    config.Config
 	headerMap sync.Map
 	streamMap sync.Map
-	Session   *yamux.Session
+	Session   *smux.Session
 	Lock      sync.Mutex
 }
 
@@ -87,7 +87,7 @@ func (u *UDPRelay) toServer() {
 			continue
 		}
 		key := cliAddr.String()
-		var stream net.Conn
+		var stream io.ReadWriteCloser
 		if value, ok := u.streamMap.Load(key); !ok {
 			u.Lock.Lock()
 			if u.Session == nil {
@@ -97,7 +97,7 @@ func (u *UDPRelay) toServer() {
 					u.Lock.Unlock()
 					continue
 				}
-				u.Session, err = yamux.Client(wsconn, nil)
+				u.Session, err = smux.Client(wsconn, nil)
 				if err != nil || u.Session == nil {
 					log.Println(err)
 					u.Lock.Unlock()
@@ -121,7 +121,7 @@ func (u *UDPRelay) toServer() {
 			u.headerMap.Store(key, header)
 			go u.toClient(stream, cliAddr)
 		} else {
-			stream = value.(net.Conn)
+			stream = value.(io.ReadWriteCloser)
 		}
 		if u.Config.Obfs {
 			data = cipher.XOR(data)
@@ -135,13 +135,12 @@ func (u *UDPRelay) toServer() {
 	}
 }
 
-func (u *UDPRelay) toClient(stream net.Conn, cliAddr *net.UDPAddr) {
+func (u *UDPRelay) toClient(stream io.ReadWriteCloser, cliAddr *net.UDPAddr) {
 	key := cliAddr.String()
 	buffer := u.Config.BytePool.Get()
 	defer u.Config.BytePool.Put(buffer)
 	defer stream.Close()
 	for {
-		stream.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := stream.Read(buffer)
 		if err != nil || n == 0 {
 			break

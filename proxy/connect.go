@@ -3,6 +3,7 @@ package proxy
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -27,7 +28,7 @@ func connectServer(config config.Config) net.Conn {
 	return c
 }
 
-func handshake(stream net.Conn, network string, host string, port string, key string, obfs bool) bool {
+func handshake(stream io.ReadWriteCloser, network string, host string, port string, key string, obfs bool) bool {
 	req := &RequestAddr{}
 	req.Network = network
 	req.Host = host
