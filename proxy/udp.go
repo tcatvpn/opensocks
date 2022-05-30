@@ -13,7 +13,6 @@ import (
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
-	"github.com/net-byte/opensocks/proto"
 	"github.com/xtaci/smux"
 )
 
@@ -126,11 +125,7 @@ func (u *UDPRelay) toServer() {
 		if u.Config.Obfs {
 			data = cipher.XOR(data)
 		}
-		edate, err := proto.Encode(data)
-		if err != nil {
-			break
-		}
-		stream.Write(edate)
+		stream.Write(data)
 		counter.IncrWrittenBytes(n)
 	}
 }
