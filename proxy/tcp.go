@@ -1,23 +1,24 @@
 package proxy
 
 import (
+	"io"
 	"log"
 	"net"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/hashicorp/yamux"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/proto"
+	"github.com/xtaci/smux"
 )
 
 type TCPProxy struct {
 	Config  config.Config
-	Session *yamux.Session
+	Session *smux.Session
 	Lock    sync.Mutex
 }
 
@@ -40,7 +41,7 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 			ResponseTCP(conn, enum.ConnectionRefused)
 			return
 		}
-		t.Session, err = yamux.Client(wsconn, nil)
+		t.Session, err = smux.Client(wsconn, nil)
 		if err != nil || t.Session == nil {
 			t.Lock.Unlock()
 			log.Println(err)
@@ -68,7 +69,7 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 	t.toClient(stream, conn)
 }
 
-func (t *TCPProxy) toServer(stream net.Conn, tcpconn net.Conn) {
+func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	defer stream.Close()
 	defer tcpconn.Close()
 	buffer := t.Config.BytePool.Get()
@@ -95,13 +96,12 @@ func (t *TCPProxy) toServer(stream net.Conn, tcpconn net.Conn) {
 	}
 }
 
-func (t *TCPProxy) toClient(stream net.Conn, tcpconn net.Conn) {
+func (t *TCPProxy) toClient(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	defer stream.Close()
 	defer tcpconn.Close()
 	buffer := t.Config.BytePool.Get()
 	defer t.Config.BytePool.Put(buffer)
 	for {
-		stream.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := stream.Read(buffer)
 		if err != nil || n == 0 {
 			break

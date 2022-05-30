@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/gobwas/ws"
-	"github.com/hashicorp/yamux"
 	"github.com/inhies/go-bytesize"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
@@ -20,6 +19,7 @@ import (
 	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/proto"
 	"github.com/net-byte/opensocks/proxy"
+	"github.com/xtaci/smux"
 )
 
 // Start server
@@ -57,7 +57,7 @@ func Start(config config.Config) {
 
 func wsHandler(w net.Conn, config config.Config) {
 	defer w.Close()
-	session, err := yamux.Server(w, nil)
+	session, err := smux.Server(w, nil)
 	if err != nil {
 		log.Printf("[server] failed to initialise yamux session: %s", err)
 		return
