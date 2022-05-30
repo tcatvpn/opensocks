@@ -46,7 +46,7 @@ func Start(config config.Config) {
 		io.WriteString(w, resp)
 	})
 
-	http.HandleFunc("/sys", func(w http.ResponseWriter, req *http.Request) {
+	http.HandleFunc("/stats", func(w http.ResponseWriter, req *http.Request) {
 		resp := fmt.Sprintf("download %v upload %v \r\n", bytesize.New(float64(counter.TotalWrittenBytes)).String(), bytesize.New(float64(counter.TotalReadBytes)).String())
 		io.WriteString(w, resp)
 	})
