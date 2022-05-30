@@ -28,7 +28,7 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 	}
 	// bypass private ip
 	if t.Config.Bypass && net.ParseIP(host) != nil && net.ParseIP(host).IsPrivate() {
-		DirectProxy(conn, host, port, t.Config)
+		directProxy(conn, host, port, t.Config)
 		return
 	}
 	t.Lock.Lock()
@@ -37,14 +37,14 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 		wsconn := connectServer(t.Config)
 		if wsconn == nil {
 			t.Lock.Unlock()
-			ResponseTCP(conn, enum.ConnectionRefused)
+			resp(conn, enum.ConnectionRefused)
 			return
 		}
 		t.Session, err = smux.Client(wsconn, nil)
 		if err != nil || t.Session == nil {
 			t.Lock.Unlock()
 			log.Println(err)
-			ResponseTCP(conn, enum.ConnectionRefused)
+			resp(conn, enum.ConnectionRefused)
 			return
 		}
 	}
@@ -53,17 +53,17 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 	if err != nil {
 		t.Session = nil
 		log.Println(err)
-		ResponseTCP(conn, enum.ConnectionRefused)
+		resp(conn, enum.ConnectionRefused)
 		return
 	}
 	ok := handshake(stream, "tcp", host, port, t.Config.Key, t.Config.Obfs)
 	if !ok {
 		t.Session = nil
 		log.Println("[tcp] failed to handshake")
-		ResponseTCP(conn, enum.ConnectionRefused)
+		resp(conn, enum.ConnectionRefused)
 		return
 	}
-	ResponseTCP(conn, enum.SuccessReply)
+	resp(conn, enum.SuccessReply)
 	go t.toServer(stream, conn)
 	t.toClient(stream, conn)
 }
