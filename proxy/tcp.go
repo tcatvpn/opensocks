@@ -12,7 +12,6 @@ import (
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
-	"github.com/net-byte/opensocks/proto"
 	"github.com/xtaci/smux"
 )
 
@@ -84,11 +83,7 @@ func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 		if t.Config.Obfs {
 			b = cipher.XOR(b)
 		}
-		edate, err := proto.Encode(b)
-		if err != nil {
-			break
-		}
-		_, err = stream.Write(edate)
+		_, err = stream.Write(b)
 		if err != nil {
 			break
 		}

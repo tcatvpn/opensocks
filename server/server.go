@@ -139,11 +139,14 @@ func toClient(config config.Config, stream net.Conn, conn net.Conn) {
 
 func toServer(config config.Config, reader *bufio.Reader, conn net.Conn) {
 	defer conn.Close()
+	buffer := config.BytePool.Get()
+	defer config.BytePool.Put(buffer)
 	for {
-		b, n, err := proto.Decode(reader)
-		if err != nil {
+		n, err := reader.Read(buffer)
+		if err != nil || n == 0 {
 			break
 		}
+		b := buffer[:n]
 		if config.Obfs {
 			b = cipher.XOR(b)
 		}
