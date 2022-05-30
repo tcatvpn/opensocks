@@ -10,17 +10,17 @@ import (
 	"github.com/net-byte/opensocks/config"
 )
 
-func DirectProxy(conn net.Conn, host string, port string, config config.Config) {
-	remoteConn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), time.Duration(enum.Timeout)*time.Second)
+func directProxy(conn net.Conn, host string, port string, config config.Config) {
+	rconn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), time.Duration(enum.Timeout)*time.Second)
 	if err != nil {
 		log.Printf("[tcp] failed to dial tcp %v", err)
-		ResponseTCP(conn, enum.ConnectionRefused)
+		resp(conn, enum.ConnectionRefused)
 		return
 	}
 
-	ResponseTCP(conn, enum.SuccessReply)
-	go copy(remoteConn, conn)
-	go copy(conn, remoteConn)
+	resp(conn, enum.SuccessReply)
+	go copy(rconn, conn)
+	copy(conn, rconn)
 }
 
 func copy(to io.WriteCloser, from io.ReadCloser) {
