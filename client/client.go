@@ -1,7 +1,6 @@
 package client
 
 import (
-	"io"
 	"log"
 	"net"
 
@@ -46,18 +45,19 @@ func (c *Client) handler(tcpConn net.Conn, udpConn *net.UDPConn) {
 	defer c.config.BytePool.Put(buf)
 	//read version
 	n, err := tcpConn.Read(buf[0:])
-	if err != nil || err == io.EOF {
+	if err != nil || n == 0 {
 		return
 	}
 	b := buf[0:n]
 	if b[0] != enum.Socks5Version {
+		proxy.ResponseTCP(tcpConn, enum.ConnectionRefused)
 		return
 	}
 	//no auth
 	proxy.ResponseNoAuth(tcpConn)
 	//read cmd
 	n, err = tcpConn.Read(buf[0:])
-	if err != nil || err == io.EOF {
+	if err != nil || n == 0 {
 		return
 	}
 	b = buf[0:n]

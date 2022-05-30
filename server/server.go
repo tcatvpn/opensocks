@@ -34,7 +34,7 @@ func Start(config config.Config) {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		io.WriteString(w, "Hello, world!\n")
+		io.WriteString(w, "Hello,World!\n")
 	})
 
 	http.HandleFunc("/ip", func(w http.ResponseWriter, req *http.Request) {
