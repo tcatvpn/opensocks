@@ -38,7 +38,6 @@ func (t *TCPServer) handler(tcpConn net.Conn, udpConn *net.UDPConn) {
 	//no auth
 	respNoAuth(tcpConn)
 	t.cmd(tcpConn, udpConn)
-
 }
 
 func (t *TCPServer) checkVersion(tcpConn net.Conn) bool {

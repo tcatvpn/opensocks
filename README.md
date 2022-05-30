@@ -22,7 +22,17 @@ Usage of /main:
   -bypass
         bypass private ip
   -S    server mode
-  -obfs    obfuscation mode
+  -obfs obfuscation mode
+```
+# Run
+## Run client
+```
+./opensocks-linux-amd64 -s=YOUR_DOMIAN:8081 -l=127.0.0.1:1080 -k=123456 -scheme ws -obfs
+```
+
+## Run server
+```
+./opensocks-linux-amd64 -S -k=123456 -obfs
 ```
 
 # Docker
@@ -30,23 +40,17 @@ Usage of /main:
 ## Run client
 ```
 docker run -d --restart=always  --network=host \
---name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:443 -l=127.0.0.1:1080 -k=123456
+--name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:8081 -l=127.0.0.1:1080 -k=123456 -scheme ws -obfs
 ```
 
 ## Run server
 ```
 docker run  -d --restart=always --net=host \
---name opensocks-server netbyte/opensocks -S -s=:8080 -k=123456
+--name opensocks-server netbyte/opensocks -S -k=123456 -obfs
 ```
 
-## Reverse proxy
-reverse proxy server(8080) via nginx/caddy(443)
-
-# Cross-platform client
-[opensocks-gui](https://github.com/net-byte/opensocks-gui)
-
-# Deploy server
-[opensocks-cloud](https://github.com/net-byte/opensocks-cloud)
+## Reverse proxy server
+add tls for opensocks server(8081) via nginx/caddy(443)
 
 # License
 [The MIT License (MIT)](https://raw.githubusercontent.com/net-byte/opensocks/main/LICENSE)
