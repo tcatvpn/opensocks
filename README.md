@@ -42,7 +42,7 @@ Usage of opensocks:
 ## Run client
 ```
 docker run -d --restart=always  --network=host \
---name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:8081 -l=127.0.0.1:1080 -k=123456 -scheme ws -obfs
+--name opensocks-client netbyte/opensocks -s=YOUR_DOMIAN:8081 -l=127.0.0.1:1080 -k=123456 -p ws -obfs
 ```
 
 ## Run server
