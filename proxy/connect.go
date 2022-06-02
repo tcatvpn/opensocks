@@ -28,7 +28,7 @@ func connectServer(config config.Config) net.Conn {
 			log.Printf("[client] failed to dial kcp server %s %v", config.ServerAddr, err)
 			return nil
 		}
-		log.Printf("[client] server connected %s", config.ServerAddr)
+		log.Printf("[client] kcp server connected %s", config.ServerAddr)
 		return c
 
 	} else {
@@ -39,7 +39,7 @@ func connectServer(config config.Config) net.Conn {
 			log.Printf("[client] failed to dial websocket %s %v", url, err)
 			return nil
 		}
-		log.Printf("[client] server connected %s", url)
+		log.Printf("[client] ws server connected %s", url)
 		return c
 	}
 }
