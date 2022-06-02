@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"crypto/sha1"
 	"fmt"
 	"io"
 	"log"
@@ -14,18 +15,33 @@ import (
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/proto"
+	"github.com/xtaci/kcp-go/v5"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 func connectServer(config config.Config) net.Conn {
-	url := fmt.Sprintf("%s://%s%s", config.Scheme, config.ServerAddr, enum.WSPath)
-	dialer := &ws.Dialer{ReadBufferSize: enum.BufferSize, WriteBufferSize: enum.BufferSize, Timeout: time.Duration(enum.Timeout) * time.Second}
-	c, _, _, err := dialer.Dial(context.Background(), url)
-	if err != nil {
-		log.Printf("[client] failed to dial websocket %s %v", url, err)
-		return nil
+	if config.Protocol == "kcp" {
+		key := pbkdf2.Key([]byte(config.Key), []byte("opensocks@2022"), 1024, 32, sha1.New)
+		block, _ := kcp.NewAESBlockCrypt(key)
+		c, err := kcp.DialWithOptions(config.ServerAddr, block, 10, 3)
+		if err != nil {
+			log.Printf("[client] failed to dial kcp server %s %v", config.ServerAddr, err)
+			return nil
+		}
+		log.Printf("[client] server connected %s", config.ServerAddr)
+		return c
+
+	} else {
+		url := fmt.Sprintf("%s://%s%s", config.Protocol, config.ServerAddr, enum.WSPath)
+		dialer := &ws.Dialer{ReadBufferSize: enum.BufferSize, WriteBufferSize: enum.BufferSize, Timeout: time.Duration(enum.Timeout) * time.Second}
+		c, _, _, err := dialer.Dial(context.Background(), url)
+		if err != nil {
+			log.Printf("[client] failed to dial websocket %s %v", url, err)
+			return nil
+		}
+		log.Printf("[client] server connected %s", url)
+		return c
 	}
-	log.Printf("[client] server connected %s", url)
-	return c
 }
 
 func handshake(stream io.ReadWriteCloser, network string, host string, port string, key string, obfs bool) bool {

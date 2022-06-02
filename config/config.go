@@ -10,7 +10,7 @@ type Config struct {
 	LocalAddr  string
 	ServerAddr string
 	Key        string
-	Scheme     string
+	Protocol   string
 	ServerMode bool
 	Bypass     bool
 	Obfs       bool
