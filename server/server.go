@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"crypto/sha1"
 	"fmt"
 	"io"
 	"log"
@@ -19,18 +20,28 @@ import (
 	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/proto"
 	"github.com/net-byte/opensocks/proxy"
+	"github.com/xtaci/kcp-go/v5"
 	"github.com/xtaci/smux"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 // Start server
 func Start(config config.Config) {
+	if config.Protocol == "kcp" {
+		startKcpServer(config)
+	} else {
+		startWsServer(config)
+	}
+}
+
+func startWsServer(config config.Config) {
 	http.HandleFunc(enum.WSPath, func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
 			log.Printf("[server] failed to upgrade http %v", err)
 			return
 		}
-		wsHandler(conn, config)
+		muxHandler(conn, config)
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -51,11 +62,26 @@ func Start(config config.Config) {
 		io.WriteString(w, resp)
 	})
 
-	log.Printf("opensocks server started on %s", config.ServerAddr)
+	log.Printf("opensocks ws server started on %s", config.ServerAddr)
 	http.ListenAndServe(config.ServerAddr, nil)
 }
 
-func wsHandler(w net.Conn, config config.Config) {
+func startKcpServer(config config.Config) {
+	key := pbkdf2.Key([]byte(config.Key), []byte("opensocks@2022"), 1024, 32, sha1.New)
+	block, _ := kcp.NewAESBlockCrypt(key)
+	if listener, err := kcp.ListenWithOptions(config.ServerAddr, block, 10, 3); err == nil {
+		log.Printf("opensocks kcp server started on %s", config.ServerAddr)
+		for {
+			conn, err := listener.AcceptKCP()
+			if err != nil {
+				continue
+			}
+			go muxHandler(conn, config)
+		}
+	}
+}
+
+func muxHandler(w net.Conn, config config.Config) {
 	defer w.Close()
 	session, err := smux.Server(w, nil)
 	if err != nil {
