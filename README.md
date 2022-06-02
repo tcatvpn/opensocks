@@ -1,6 +1,6 @@
 # Opensocks
 
-A socks5 proxy over websocket.
+A multiplexing socks5 proxy.
 
 [![Travis](https://travis-ci.com/net-byte/opensocks.svg?branch=main)](https://github.com/net-byte/opensocks)
 [![Go Report Card](https://goreportcard.com/badge/github.com/net-byte/opensocks)](https://goreportcard.com/report/github.com/net-byte/opensocks)
@@ -29,7 +29,7 @@ Usage of opensocks:
 # Run
 ## Run client
 ```
-./opensocks-linux-amd64 -s=YOUR_DOMIAN:8081 -l=127.0.0.1:1080 -k=123456 -scheme ws -obfs
+./opensocks-linux-amd64 -s=YOUR_DOMIAN:8081 -l=127.0.0.1:1080 -k=123456 -p ws -obfs
 ```
 
 ## Run server
@@ -52,7 +52,7 @@ docker run  -d --restart=always --net=host \
 ```
 
 ## Reverse proxy server
-add tls for opensocks server(8081) via nginx/caddy(443)
+add tls for opensocks ws server(8081) via nginx/caddy(443)
 
 # License
 [The MIT License (MIT)](https://raw.githubusercontent.com/net-byte/opensocks/main/LICENSE)
