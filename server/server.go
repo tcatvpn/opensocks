@@ -76,6 +76,10 @@ func startKcpServer(config config.Config) {
 			if err != nil {
 				continue
 			}
+			conn.SetWindowSize(enum.SndWnd, enum.RcvWnd)
+			if err := conn.SetReadBuffer(enum.SockBuf); err != nil {
+				log.Println("[server] failed to set read buffer:", err)
+			}
 			go muxHandler(conn, config)
 		}
 	}
@@ -83,7 +87,11 @@ func startKcpServer(config config.Config) {
 
 func muxHandler(w net.Conn, config config.Config) {
 	defer w.Close()
-	session, err := smux.Server(w, nil)
+	smuxConfig := smux.DefaultConfig()
+	smuxConfig.Version = enum.SmuxVer
+	smuxConfig.MaxReceiveBuffer = enum.SmuxBuf
+	smuxConfig.MaxStreamBuffer = enum.StreamBuf
+	session, err := smux.Server(w, smuxConfig)
 	if err != nil {
 		log.Printf("[server] failed to initialise yamux session: %s", err)
 		return
