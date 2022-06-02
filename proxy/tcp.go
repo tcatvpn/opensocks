@@ -40,7 +40,11 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 			resp(conn, enum.ConnectionRefused)
 			return
 		}
-		t.Session, err = smux.Client(wsconn, nil)
+		smuxConfig := smux.DefaultConfig()
+		smuxConfig.Version = enum.SmuxVer
+		smuxConfig.MaxReceiveBuffer = enum.SmuxBuf
+		smuxConfig.MaxStreamBuffer = enum.StreamBuf
+		t.Session, err = smux.Client(wsconn, smuxConfig)
 		if err != nil || t.Session == nil {
 			t.Lock.Unlock()
 			log.Println(err)

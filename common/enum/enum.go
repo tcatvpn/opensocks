@@ -38,4 +38,10 @@ const (
 	Timeout    int    = 60
 	BufferSize int    = 64 * 1024
 	WSPath     string = "/freedom"
+	SndWnd     int    = 10240
+	RcvWnd     int    = 10240
+	SockBuf    int    = 4194304
+	SmuxVer    int    = 2
+	SmuxBuf    int    = 4194304
+	StreamBuf  int    = 2097152
 )

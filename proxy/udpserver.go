@@ -63,7 +63,11 @@ func (u *UDPServer) toServer() {
 					u.Lock.Unlock()
 					continue
 				}
-				u.Session, err = smux.Client(wsconn, nil)
+				smuxConfig := smux.DefaultConfig()
+				smuxConfig.Version = enum.SmuxVer
+				smuxConfig.MaxReceiveBuffer = enum.SmuxBuf
+				smuxConfig.MaxStreamBuffer = enum.StreamBuf
+				u.Session, err = smux.Client(wsconn, smuxConfig)
 				if err != nil || u.Session == nil {
 					log.Println(err)
 					u.Lock.Unlock()

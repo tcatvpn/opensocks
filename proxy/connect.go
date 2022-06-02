@@ -28,6 +28,10 @@ func connectServer(config config.Config) net.Conn {
 			log.Printf("[client] failed to dial kcp server %s %v", config.ServerAddr, err)
 			return nil
 		}
+		c.SetWindowSize(enum.SndWnd, enum.RcvWnd)
+		if err := c.SetReadBuffer(enum.SockBuf); err != nil {
+			log.Println("[client] failed to set read buffer:", err)
+		}
 		log.Printf("[client] kcp server connected %s", config.ServerAddr)
 		return c
 
