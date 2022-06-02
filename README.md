@@ -10,19 +10,21 @@ A socks5 proxy over websocket.
 
 # Usage
 ```
-Usage of /main:
-  -k string
-        encryption key (default "6w9z$C&F)J@NcRfUjXn2r4u7x!A%D*G-")
-  -l string
-        local address (default "127.0.0.1:1080")
-  -s string
-        server address (default ":8081")
-  -scheme string
-        scheme ws/wss (default "wss")
+Usage of opensocks:
+  -S	server mode
   -bypass
-        bypass private ip
-  -S    server mode
-  -obfs obfuscation mode
+    	bypass private ip
+  -k string
+    	encryption key (default "6w9z$C&F)J@NcRfUjXn2r4u7x!A%D*G-")
+  -l string
+    	local address (default "127.0.0.1:1080")
+  -obfs
+    	obfuscation mode
+  -p string
+    	protocol ws/wss/kcp (default "wss")
+  -s string
+    	server address (default ":8081")
+
 ```
 # Run
 ## Run client
