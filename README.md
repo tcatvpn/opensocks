@@ -54,6 +54,19 @@ docker run  -d --restart=always --net=host \
 ## Reverse proxy server
 add tls for opensocks ws server(8081) via nginx/caddy(443)
 
+## Server settings
+settings for kcp with good performance
+```
+ulimit -n 65535
+vi /etc/sysctl.conf
+net.core.rmem_max=26214400 // BDP - bandwidth delay product
+net.core.rmem_default=26214400
+net.core.wmem_max=26214400
+net.core.wmem_default=26214400
+net.core.netdev_max_backlog=2048 // proportional to -rcvwnd
+sysctl -p /etc/sysctl.conf
+```
+
 # License
 [The MIT License (MIT)](https://raw.githubusercontent.com/net-byte/opensocks/main/LICENSE)
 
