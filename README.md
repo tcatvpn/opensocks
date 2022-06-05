@@ -77,7 +77,7 @@ sysctl -p /etc/sysctl.conf
 ## Credits
 
 This repo relies on the following third-party projects:
-- [gobwas](github.com/gobwas)
-- [kcp-go](github.com/xtaci/kcp-go)
-- [smux](github.com/xtaci/smux)
-- [bpool](github.com/oxtoacart/bpool)
+- [gobwas](https://github.com/gobwas)
+- [kcp-go](https://github.com/xtaci/kcp-go)
+- [smux](https://github.com/xtaci/smux)
+- [bpool](https://github.com/oxtoacart/bpool)
