@@ -8,6 +8,10 @@ A multiplexing socks5 proxy.
 ![image](https://img.shields.io/badge/License-Anti--996-red)
 ![image](https://img.shields.io/github/downloads/net-byte/opensocks/total.svg)
 
+# Features
+* socks5 over websocket
+* socks5 over kcp
+
 # Usage
 ```
 Usage of opensocks:
@@ -70,4 +74,10 @@ sysctl -p /etc/sysctl.conf
 # License
 [The MIT License (MIT)](https://raw.githubusercontent.com/net-byte/opensocks/main/LICENSE)
 
+## Credits
 
+This repo relies on the following third-party projects:
+- [gobwas](github.com/gobwas)
+- [kcp-go](github.com/xtaci/kcp-go)
+- [smux](github.com/xtaci/smux)
+- [bpool](github.com/oxtoacart/bpool)
