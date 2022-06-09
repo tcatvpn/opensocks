@@ -64,12 +64,12 @@ func handshake(stream io.ReadWriteCloser, network string, host string, port stri
 	if obfs {
 		data = cipher.XOR(data)
 	}
-	edate, err := proto.Encode(data)
+	encode, err := proto.Encode(data)
 	if err != nil {
 		log.Println(err)
 		return false
 	}
-	_, err = stream.Write(edate)
+	_, err = stream.Write(encode)
 	if err != nil {
 		log.Println(err)
 		return false
