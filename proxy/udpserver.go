@@ -11,6 +11,7 @@ import (
 
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
+	"github.com/net-byte/opensocks/common/pool"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 	"github.com/xtaci/smux"
@@ -39,8 +40,8 @@ func (u *UDPServer) Start() *net.UDPConn {
 
 func (u *UDPServer) toServer() {
 	defer u.UDPConn.Close()
-	buf := u.Config.BytePool.Get()
-	defer u.Config.BytePool.Put(buf)
+	buf := pool.BytePool.Get()
+	defer pool.BytePool.Put(buf)
 	for {
 		u.UDPConn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, cliAddr, err := u.UDPConn.ReadFromUDP(buf)
@@ -103,8 +104,8 @@ func (u *UDPServer) toServer() {
 
 func (u *UDPServer) toClient(stream io.ReadWriteCloser, cliAddr *net.UDPAddr) {
 	key := cliAddr.String()
-	buffer := u.Config.BytePool.Get()
-	defer u.Config.BytePool.Put(buffer)
+	buffer := pool.BytePool.Get()
+	defer pool.BytePool.Put(buffer)
 	defer stream.Close()
 	for {
 		n, err := stream.Read(buffer)

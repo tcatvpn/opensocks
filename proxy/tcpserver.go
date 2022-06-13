@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/net-byte/opensocks/common/enum"
+	"github.com/net-byte/opensocks/common/pool"
 	"github.com/net-byte/opensocks/config"
 )
 
@@ -41,8 +42,8 @@ func (t *TCPServer) handler(tcpConn net.Conn, udpConn *net.UDPConn) {
 }
 
 func (t *TCPServer) checkVersion(tcpConn net.Conn) bool {
-	buf := t.Config.BytePool.Get()
-	defer t.Config.BytePool.Put(buf)
+	buf := pool.BytePool.Get()
+	defer pool.BytePool.Put(buf)
 	n, err := tcpConn.Read(buf[0:])
 	if err != nil || n == 0 {
 		return false
@@ -56,8 +57,8 @@ func (t *TCPServer) checkVersion(tcpConn net.Conn) bool {
 }
 
 func (t *TCPServer) cmd(tcpConn net.Conn, udpConn *net.UDPConn) {
-	buf := t.Config.BytePool.Get()
-	defer t.Config.BytePool.Put(buf)
+	buf := pool.BytePool.Get()
+	defer pool.BytePool.Put(buf)
 	n, err := tcpConn.Read(buf[0:])
 	if err != nil || n == 0 {
 		return

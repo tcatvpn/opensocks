@@ -3,6 +3,7 @@ package proxy
 import (
 	"net"
 
+	"github.com/net-byte/opensocks/common/pool"
 	"github.com/net-byte/opensocks/config"
 )
 
@@ -22,8 +23,8 @@ func (u *UDPProxy) Proxy(tcpConn net.Conn, udpConn *net.UDPConn) {
 
 func (u *UDPProxy) keepTCPAlive(tcpConn *net.TCPConn, done chan<- bool) {
 	tcpConn.SetKeepAlive(true)
-	buf := u.Config.BytePool.Get()
-	defer u.Config.BytePool.Put(buf)
+	buf := pool.BytePool.Get()
+	defer pool.BytePool.Put(buf)
 	for {
 		_, err := tcpConn.Read(buf[0:])
 		if err != nil {

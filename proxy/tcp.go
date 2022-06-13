@@ -10,6 +10,7 @@ import (
 
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
+	"github.com/net-byte/opensocks/common/pool"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 	"github.com/xtaci/smux"
@@ -75,8 +76,8 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	defer stream.Close()
 	defer tcpconn.Close()
-	buffer := t.Config.BytePool.Get()
-	defer t.Config.BytePool.Put(buffer)
+	buffer := pool.BytePool.Get()
+	defer pool.BytePool.Put(buffer)
 	for {
 		tcpconn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := tcpconn.Read(buffer)
@@ -98,8 +99,8 @@ func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 func (t *TCPProxy) toClient(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	defer stream.Close()
 	defer tcpconn.Close()
-	buffer := t.Config.BytePool.Get()
-	defer t.Config.BytePool.Put(buffer)
+	buffer := pool.BytePool.Get()
+	defer pool.BytePool.Put(buffer)
 	for {
 		n, err := stream.Read(buffer)
 		if err != nil || n == 0 {

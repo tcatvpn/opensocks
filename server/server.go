@@ -16,6 +16,7 @@ import (
 	"github.com/inhies/go-bytesize"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
+	"github.com/net-byte/opensocks/common/pool"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/proto"
@@ -25,7 +26,7 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-// Start server
+// Start the server
 func Start(config config.Config) {
 	if config.Protocol == "kcp" {
 		startKcpServer(config)
@@ -151,8 +152,8 @@ func handshake(config config.Config, reader *bufio.Reader) (bool, proxy.RequestA
 
 func toClient(config config.Config, stream net.Conn, conn net.Conn) {
 	defer conn.Close()
-	buffer := config.BytePool.Get()
-	defer config.BytePool.Put(buffer)
+	buffer := pool.BytePool.Get()
+	defer pool.BytePool.Put(buffer)
 	for {
 		conn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := conn.Read(buffer)
@@ -173,8 +174,8 @@ func toClient(config config.Config, stream net.Conn, conn net.Conn) {
 
 func toServer(config config.Config, reader *bufio.Reader, conn net.Conn) {
 	defer conn.Close()
-	buffer := config.BytePool.Get()
-	defer config.BytePool.Put(buffer)
+	buffer := pool.BytePool.Get()
+	defer pool.BytePool.Put(buffer)
 	for {
 		n, err := reader.Read(buffer)
 		if err != nil || n == 0 {
