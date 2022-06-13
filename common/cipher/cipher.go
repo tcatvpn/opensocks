@@ -11,12 +11,14 @@ import (
 var _chars = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
 var _key = []byte("SpUsXuZw4z6B9EbGdKgNjQnTqVsYv2x5")
 
+// Generate key from string
 func GenerateKey(key string) {
 	sha := sha256.Sum256([]byte(key))
 	encode := hex.EncodeToString(sha[:])
 	_key = []byte(encode[0:32])
 }
 
+// XOR encrypt
 func XOR(src []byte) []byte {
 	_klen := len(_key)
 	for i := 0; i < len(src); i++ {
@@ -25,6 +27,7 @@ func XOR(src []byte) []byte {
 	return src
 }
 
+// Generate random string
 func Random() string {
 	rand.Seed(time.Now().UnixNano())
 	length := 8 + rand.Intn(8)

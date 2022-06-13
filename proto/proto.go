@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 )
 
+// Encode encodes a byte array into a byte array
 func Encode(data []byte) ([]byte, error) {
 	length := int32(len(data))
 	pkg := new(bytes.Buffer)
@@ -20,6 +21,7 @@ func Encode(data []byte) ([]byte, error) {
 	return pkg.Bytes(), nil
 }
 
+// Decode decodes a byte array into a byte array
 func Decode(reader *bufio.Reader) ([]byte, int32, error) {
 	len, _ := reader.Peek(4)
 	blen := bytes.NewBuffer(len)

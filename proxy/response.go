@@ -8,6 +8,7 @@ import (
 	"github.com/net-byte/opensocks/common/enum"
 )
 
+// resp is a response
 func resp(conn net.Conn, rep byte) {
 	/**
 	  +----+-----+-------+------+----------+----------+
@@ -19,6 +20,7 @@ func resp(conn net.Conn, rep byte) {
 	conn.Write([]byte{enum.Socks5Version, rep, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 }
 
+// respNoAuth is a no auth response
 func respNoAuth(conn net.Conn) {
 	/**
 	  +----+--------+
@@ -30,6 +32,7 @@ func respNoAuth(conn net.Conn) {
 	conn.Write([]byte{enum.Socks5Version, enum.NoAuth})
 }
 
+// respSuccess is a success response
 func respSuccess(conn net.Conn, ip net.IP, port int) {
 	/**
 	  +----+-----+-------+------+----------+----------+

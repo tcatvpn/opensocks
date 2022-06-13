@@ -10,6 +10,7 @@ import (
 	"github.com/net-byte/opensocks/config"
 )
 
+// Direct is a direct proxy
 func directProxy(conn net.Conn, host string, port string, config config.Config) {
 	rconn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), time.Duration(enum.Timeout)*time.Second)
 	if err != nil {
@@ -23,6 +24,7 @@ func directProxy(conn net.Conn, host string, port string, config config.Config) 
 	copy(conn, rconn)
 }
 
+// Copy copies data from src to dst
 func copy(to io.WriteCloser, from io.ReadCloser) {
 	defer to.Close()
 	defer from.Close()

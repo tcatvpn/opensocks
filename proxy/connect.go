@@ -19,6 +19,7 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
+// Connect connects to the server
 func connectServer(config config.Config) net.Conn {
 	if config.Protocol == "kcp" {
 		key := pbkdf2.Key([]byte(config.Key), []byte("opensocks@2022"), 1024, 32, sha1.New)
@@ -48,6 +49,7 @@ func connectServer(config config.Config) net.Conn {
 	}
 }
 
+// Handshake handshake with the server
 func handshake(stream io.ReadWriteCloser, network string, host string, port string, key string, obfs bool) bool {
 	req := &RequestAddr{}
 	req.Network = network

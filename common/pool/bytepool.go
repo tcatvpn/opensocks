@@ -7,6 +7,7 @@ import (
 	"github.com/oxtoacart/bpool"
 )
 
+// BytePool is a byte pool
 var BytePool *bpool.BytePool
 
 func init() {

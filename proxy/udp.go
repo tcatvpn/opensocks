@@ -7,10 +7,12 @@ import (
 	"github.com/net-byte/opensocks/config"
 )
 
+// The UDPProxy struct
 type UDPProxy struct {
 	Config config.Config
 }
 
+// Proxy handles the udp connection
 func (u *UDPProxy) Proxy(tcpConn net.Conn, udpConn *net.UDPConn) {
 	defer tcpConn.Close()
 	udpAddr, _ := net.ResolveUDPAddr("udp", udpConn.LocalAddr().String())
@@ -21,6 +23,7 @@ func (u *UDPProxy) Proxy(tcpConn net.Conn, udpConn *net.UDPConn) {
 	<-done
 }
 
+// keepTCPAlive keeps the tcp connection alive
 func (u *UDPProxy) keepTCPAlive(tcpConn *net.TCPConn, done chan<- bool) {
 	tcpConn.SetKeepAlive(true)
 	buf := pool.BytePool.Get()

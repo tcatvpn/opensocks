@@ -16,12 +16,14 @@ import (
 	"github.com/xtaci/smux"
 )
 
+// The tcp proxy struct
 type TCPProxy struct {
 	Config  config.Config
 	Session *smux.Session
 	Lock    sync.Mutex
 }
 
+// Proxy is a function to proxy data
 func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 	host, port := t.getAddr(data)
 	if host == "" || port == "" {
@@ -73,6 +75,7 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 	t.toClient(stream, conn)
 }
 
+// toServer is a goroutine to copy data from client to server
 func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	defer stream.Close()
 	defer tcpconn.Close()
@@ -96,6 +99,7 @@ func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	}
 }
 
+// toClient is a goroutine to copy data from server to client
 func (t *TCPProxy) toClient(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	defer stream.Close()
 	defer tcpconn.Close()
@@ -118,6 +122,7 @@ func (t *TCPProxy) toClient(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	}
 }
 
+// getAddr is a function to get host and port from data
 func (t *TCPProxy) getAddr(b []byte) (host string, port string) {
 	/**
 	  +----+-----+-------+------+----------+----------+

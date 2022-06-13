@@ -4,6 +4,7 @@ import (
 	"github.com/net-byte/opensocks/common/cipher"
 )
 
+// The config struct
 type Config struct {
 	LocalAddr  string
 	ServerAddr string

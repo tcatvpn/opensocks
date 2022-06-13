@@ -17,6 +17,7 @@ import (
 	"github.com/xtaci/smux"
 )
 
+// The UDP server struct
 type UDPServer struct {
 	UDPConn   *net.UDPConn
 	Config    config.Config
@@ -26,6 +27,7 @@ type UDPServer struct {
 	Lock      sync.Mutex
 }
 
+// Start the UDP server
 func (u *UDPServer) Start() *net.UDPConn {
 	udpAddr, _ := net.ResolveUDPAddr("udp", u.Config.LocalAddr)
 	udpConn, err := net.ListenUDP("udp", udpAddr)
@@ -38,6 +40,7 @@ func (u *UDPServer) Start() *net.UDPConn {
 	return u.UDPConn
 }
 
+// toServer handle the udp packet from client
 func (u *UDPServer) toServer() {
 	defer u.UDPConn.Close()
 	buf := pool.BytePool.Get()
@@ -102,6 +105,7 @@ func (u *UDPServer) toServer() {
 	}
 }
 
+// toClient handle the udp packet from server
 func (u *UDPServer) toClient(stream io.ReadWriteCloser, cliAddr *net.UDPAddr) {
 	key := cliAddr.String()
 	buffer := pool.BytePool.Get()
@@ -131,6 +135,7 @@ func (u *UDPServer) toClient(stream io.ReadWriteCloser, cliAddr *net.UDPAddr) {
 	u.streamMap.Delete(key)
 }
 
+// getAddr get the dst addr and header from the packet
 func (u *UDPServer) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, data []byte) {
 	/*
 	   +----+------+------+----------+----------+----------+

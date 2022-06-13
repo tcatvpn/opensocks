@@ -9,6 +9,7 @@ import (
 	"github.com/net-byte/opensocks/config"
 )
 
+// The tcp server struct
 type TCPServer struct {
 	Config  config.Config
 	Tproxy  *TCPProxy
@@ -16,6 +17,7 @@ type TCPServer struct {
 	UDPConn *net.UDPConn
 }
 
+// Start starts the tcp server
 func (t *TCPServer) Start() {
 	log.Printf("opensocks [tcp] client started on %s", t.Config.LocalAddr)
 	l, err := net.Listen("tcp", t.Config.LocalAddr)
@@ -31,6 +33,7 @@ func (t *TCPServer) Start() {
 	}
 }
 
+// handler handles the tcp connection
 func (t *TCPServer) handler(tcpConn net.Conn, udpConn *net.UDPConn) {
 	if !t.checkVersion(tcpConn) {
 		tcpConn.Close()
@@ -41,6 +44,7 @@ func (t *TCPServer) handler(tcpConn net.Conn, udpConn *net.UDPConn) {
 	t.cmd(tcpConn, udpConn)
 }
 
+// checkVersion checks the version
 func (t *TCPServer) checkVersion(tcpConn net.Conn) bool {
 	buf := pool.BytePool.Get()
 	defer pool.BytePool.Put(buf)
@@ -56,6 +60,7 @@ func (t *TCPServer) checkVersion(tcpConn net.Conn) bool {
 	return true
 }
 
+// cmd handles the command
 func (t *TCPServer) cmd(tcpConn net.Conn, udpConn *net.UDPConn) {
 	buf := pool.BytePool.Get()
 	defer pool.BytePool.Put(buf)
