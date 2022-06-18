@@ -13,19 +13,19 @@ A multiplexing socks5 proxy that supports websocket and kcp transport.
 Usage of opensocks:
   -S	server mode
   -bypass
-    	bypass private ip
+      bypass private ip
   -k string
-    	encryption key (default "6w9z$C&F)J@NcRfUjXn2r4u7x!A%D*G-")
+      encryption key (default "6w9z$C&F)J@NcRfUjXn2r4u7x!A%D*G-")
   -l string
-    	local address (default "127.0.0.1:1080")
+      local address (default "127.0.0.1:1080")
   -obfs
-    	enable data obfuscation
+      enable data obfuscation
   -compress
       enable data compression
   -p string
-    	protocol ws/wss/kcp (default "wss")
+      protocol ws/wss/kcp (default "wss")
   -s string
-    	server address (default ":8081")
+      server address (default ":8081")
 
 ```
 # Run
