@@ -15,6 +15,7 @@ require (
 require (
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/klauspost/reedsolomon v1.9.9 // indirect
 	github.com/mmcloughlin/avo v0.0.0-20200803215136-443f81d77104 // indirect

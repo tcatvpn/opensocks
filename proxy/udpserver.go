@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/snappy"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/common/pool"
@@ -100,6 +101,9 @@ func (u *UDPServer) toServer() {
 		if u.Config.Obfs {
 			data = cipher.XOR(data)
 		}
+		if u.Config.Compress {
+			data = snappy.Encode(nil, data)
+		}
 		stream.Write(data)
 		counter.IncrWrittenBytes(n)
 	}
@@ -118,6 +122,12 @@ func (u *UDPServer) toClient(stream io.ReadWriteCloser, cliAddr *net.UDPAddr) {
 		}
 		if header, ok := u.headerMap.Load(key); ok {
 			b := buffer[:n]
+			if u.Config.Compress {
+				b, err = snappy.Decode(nil, b)
+				if err != nil {
+					break
+				}
+			}
 			if u.Config.Obfs {
 				b = cipher.XOR(b)
 			}

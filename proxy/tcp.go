@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/snappy"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/common/pool"
@@ -91,6 +92,9 @@ func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 		if t.Config.Obfs {
 			b = cipher.XOR(b)
 		}
+		if t.Config.Compress {
+			b = snappy.Encode(nil, b)
+		}
 		_, err = stream.Write(b)
 		if err != nil {
 			break
@@ -111,6 +115,12 @@ func (t *TCPProxy) toClient(stream io.ReadWriteCloser, tcpconn net.Conn) {
 			break
 		}
 		b := buffer[:n]
+		if t.Config.Compress {
+			b, err = snappy.Decode(nil, b)
+			if err != nil {
+				break
+			}
+		}
 		if t.Config.Obfs {
 			b = cipher.XOR(b)
 		}

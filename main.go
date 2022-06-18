@@ -16,7 +16,8 @@ func main() {
 	flag.BoolVar(&config.ServerMode, "S", false, "server mode")
 	flag.StringVar(&config.Protocol, "p", "wss", "protocol ws/wss/kcp")
 	flag.BoolVar(&config.Bypass, "bypass", false, "bypass private ip")
-	flag.BoolVar(&config.Obfs, "obfs", false, "obfuscation mode")
+	flag.BoolVar(&config.Obfs, "obfs", false, "enable data obfuscation")
+	flag.BoolVar(&config.Compress, "compress", false, "enable data compression")
 	flag.Parse()
 	config.Init()
 	if config.ServerMode {

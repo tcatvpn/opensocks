@@ -19,7 +19,9 @@ Usage of opensocks:
   -l string
     	local address (default "127.0.0.1:1080")
   -obfs
-    	obfuscation mode
+    	enable data obfuscation
+  -compress
+      enable data compression
   -p string
     	protocol ws/wss/kcp (default "wss")
   -s string

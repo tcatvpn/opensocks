@@ -13,6 +13,7 @@ type Config struct {
 	ServerMode bool
 	Bypass     bool
 	Obfs       bool
+	Compress   bool
 }
 
 func (config *Config) Init() {

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gobwas/ws"
+	"github.com/golang/snappy"
 	"github.com/inhies/go-bytesize"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
@@ -164,6 +165,9 @@ func toClient(config config.Config, stream net.Conn, conn net.Conn) {
 		if config.Obfs {
 			b = cipher.XOR(b)
 		}
+		if config.Compress {
+			b = snappy.Encode(nil, b)
+		}
 		_, err = stream.Write(b)
 		if err != nil {
 			break
@@ -182,6 +186,12 @@ func toServer(config config.Config, reader *bufio.Reader, conn net.Conn) {
 			break
 		}
 		b := buffer[:n]
+		if config.Compress {
+			b, err = snappy.Decode(nil, b)
+			if err != nil {
+				break
+			}
+		}
 		if config.Obfs {
 			b = cipher.XOR(b)
 		}
