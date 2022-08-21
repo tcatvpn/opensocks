@@ -6,14 +6,16 @@ import (
 
 // The config struct
 type Config struct {
-	LocalAddr  string
-	ServerAddr string
-	Key        string
-	Protocol   string
-	ServerMode bool
-	Bypass     bool
-	Obfs       bool
-	Compress   bool
+	LocalAddr          string
+	LocalHttpProxyAddr string
+	ServerAddr         string
+	Key                string
+	Protocol           string
+	ServerMode         bool
+	Bypass             bool
+	Obfs               bool
+	Compress           bool
+	HttpProxy          bool
 }
 
 func (config *Config) Init() {

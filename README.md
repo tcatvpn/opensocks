@@ -26,7 +26,10 @@ Usage of opensocks:
       protocol ws/wss/kcp (default "wss")
   -s string
       server address (default ":8081")
-
+  -http string
+        local http proxy address (default ":8000")
+  -http-proxy
+        enable http proxy
 ```
 # Run
 ## Run client
