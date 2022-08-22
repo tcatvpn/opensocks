@@ -44,7 +44,7 @@ Usage of opensocks:
 
 ## Run server
 ```
-./opensocks-linux-amd64 -S -k=123456 -obfs
+./opensocks-linux-amd64 -S -k=123456 -obfs -p kcp
 ```
 
 # Docker
