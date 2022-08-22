@@ -1,6 +1,6 @@
 # Opensocks
 
-A multiplexing socks5 proxy that supports websocket and kcp transport.
+A multiplexing socks5/http/https proxy that supports websocket and kcp protocol.
 
 [![Travis](https://travis-ci.com/net-byte/opensocks.svg?branch=main)](https://github.com/net-byte/opensocks)
 [![Go Report Card](https://goreportcard.com/badge/github.com/net-byte/opensocks)](https://goreportcard.com/report/github.com/net-byte/opensocks)
@@ -17,7 +17,7 @@ Usage of opensocks:
   -k string
       encryption key (default "6w9z$C&F)J@NcRfUjXn2r4u7x!A%D*G-")
   -l string
-      local address (default "127.0.0.1:1080")
+      local socks5 proxy address (default "127.0.0.1:1080")
   -obfs
       enable data obfuscation
   -compress
@@ -34,7 +34,12 @@ Usage of opensocks:
 # Run
 ## Run client
 ```
-./opensocks-linux-amd64 -s=YOUR_DOMIAN:8081 -l=127.0.0.1:1080 -k=123456 -p ws -obfs
+./opensocks-linux-amd64 -s=YOUR_DOMIAN:8081 -l=127.0.0.1:1080 -k=123456 -p kcp -obfs
+```
+
+## Run client(enable http proxy)
+```
+./opensocks-linux-amd64 -s=YOUR_DOMIAN:8081 -l=127.0.0.1:1080 -k=123456 -p kcp -obfs -http-proxy -http 127.0.0.1:8000
 ```
 
 ## Run server
