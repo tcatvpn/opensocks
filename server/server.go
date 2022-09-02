@@ -27,13 +27,7 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-var _defaultHttpResponse = []byte(`HTTP/1.1 200 OK
-Server: nginx/1.18.0 (Ubuntu)
-Content-Type: text/html
-Content-Length: 612
-Connection: keep-alive
-Accept-Ranges: bytes
-
+var _defaultPage = []byte(`
 <!DOCTYPE html>
 <html>
 <head>
@@ -80,7 +74,13 @@ func startWsServer(config config.Config) {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		w.Write(_defaultHttpResponse)
+		w.WriteHeader(200)
+		w.Header().Set("Server", "nginx/1.18.0 (Ubuntu)")
+		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Content-Length", strconv.Itoa(len(_defaultPage)))
+		w.Header().Set("Connection", " keep-alive")
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Write(_defaultPage)
 	})
 
 	http.HandleFunc("/ip", func(w http.ResponseWriter, req *http.Request) {
