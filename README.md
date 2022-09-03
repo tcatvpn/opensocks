@@ -27,7 +27,7 @@ Usage of opensocks:
   -s string
       server address (default ":8081")
   -http string
-        local http proxy address (default ":8000")
+        local http proxy address (default ":8008")
   -http-proxy
         enable http proxy
 ```
