@@ -6,6 +6,7 @@ import (
 
 	"github.com/net-byte/opensocks/client"
 	"github.com/net-byte/opensocks/config"
+	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/server"
 )
 
@@ -21,4 +22,12 @@ func Start(jsonConfig string) {
 	} else {
 		client.Start(config)
 	}
+}
+
+func GetTotalReadBytes() uint64 {
+	return counter.TotalReadBytes
+}
+
+func GetTotalWrittenBytes() uint64 {
+	return counter.TotalWrittenBytes
 }
