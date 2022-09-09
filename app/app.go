@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"log"
+	"strconv"
 
 	"github.com/net-byte/opensocks/client"
 	"github.com/net-byte/opensocks/config"
@@ -24,10 +25,10 @@ func Start(jsonConfig string) {
 	}
 }
 
-func GetTotalReadBytes() uint64 {
-	return counter.TotalReadBytes
+func GetTotalReadBytes() string {
+	return strconv.FormatUint(counter.TotalReadBytes, 10)
 }
 
-func GetTotalWrittenBytes() uint64 {
-	return counter.TotalWrittenBytes
+func GetTotalWrittenBytes() string {
+	return strconv.FormatUint(counter.TotalWrittenBytes, 10)
 }
