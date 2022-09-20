@@ -11,23 +11,25 @@ import (
 
 // The tcp server struct
 type TCPServer struct {
-	Config  config.Config
-	Tproxy  *TCPProxy
-	Uproxy  *UDPProxy
-	UDPConn *net.UDPConn
+	Config   config.Config
+	Tproxy   *TCPProxy
+	Uproxy   *UDPProxy
+	UDPConn  *net.UDPConn
+	Listener net.Listener
 }
 
 // Start starts the tcp server
 func (t *TCPServer) Start() {
 	log.Printf("opensocks [tcp] client started on %s", t.Config.LocalAddr)
-	l, err := net.Listen("tcp", t.Config.LocalAddr)
+	var err error
+	t.Listener, err = net.Listen("tcp", t.Config.LocalAddr)
 	if err != nil {
 		log.Panicf("[tcp] failed to listen tcp %v", err)
 	}
 	for {
-		tcpConn, err := l.Accept()
+		tcpConn, err := t.Listener.Accept()
 		if err != nil {
-			continue
+			break
 		}
 		go t.handler(tcpConn, t.UDPConn)
 	}

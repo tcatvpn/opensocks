@@ -11,6 +11,7 @@ import (
 	"github.com/net-byte/opensocks/server"
 )
 
+// Start starts the app by json config
 func Start(jsonConfig string) {
 	config := config.Config{}
 	err := json.Unmarshal([]byte(jsonConfig), &config)
@@ -25,10 +26,22 @@ func Start(jsonConfig string) {
 	}
 }
 
+// StopClient stops the client
+func StopClient() {
+	client.Stop()
+}
+
+// StopServer stops the server
+func StopServer() {
+	server.Stop()
+}
+
+// GetTotalReadBytes returns the total read bytes
 func GetTotalReadBytes() string {
 	return strconv.FormatUint(counter.TotalReadBytes, 10)
 }
 
+// GetTotalWrittenBytes returns the total written bytes
 func GetTotalWrittenBytes() string {
 	return strconv.FormatUint(counter.TotalWrittenBytes, 10)
 }

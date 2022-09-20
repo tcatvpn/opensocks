@@ -31,11 +31,11 @@ type UDPServer struct {
 // Start the UDP server
 func (u *UDPServer) Start() *net.UDPConn {
 	udpAddr, _ := net.ResolveUDPAddr("udp", u.Config.LocalAddr)
-	udpConn, err := net.ListenUDP("udp", udpAddr)
+	var err error
+	u.UDPConn, err = net.ListenUDP("udp", udpAddr)
 	if err != nil {
 		log.Panicf("[udp] failed to listen udp %v", err)
 	}
-	u.UDPConn = udpConn
 	go u.toServer()
 	log.Printf("opensocks [udp] client started on %v", u.Config.LocalAddr)
 	return u.UDPConn
@@ -49,8 +49,8 @@ func (u *UDPServer) toServer() {
 	for {
 		u.UDPConn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, cliAddr, err := u.UDPConn.ReadFromUDP(buf)
-		if err != nil || err == io.EOF || n == 0 {
-			continue
+		if err != nil {
+			break
 		}
 		b := buf[:n]
 		dstAddr, header, data := u.getAddr(b)

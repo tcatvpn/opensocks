@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"context"
 	"crypto/sha1"
 	"fmt"
 	"io"
@@ -54,12 +55,32 @@ Commercial support is available at
 </body>
 </html>`)
 
-// Start the server
+var _wsServer http.Server
+var _kcpListener *kcp.Listener
+var _serverType string
+
+// Start starts the server
 func Start(config config.Config) {
 	if config.Protocol == "kcp" {
+		_serverType = "kcp"
 		startKcpServer(config)
 	} else {
+		_serverType = "ws"
 		startWsServer(config)
+	}
+}
+
+// Stop starts the server
+func Stop() {
+	if _serverType == "kcp" {
+		if err := _kcpListener.Close(); err != nil {
+			log.Printf("failed to shutdown kcp server: %v", err)
+		}
+	}
+	if _serverType == "ws" {
+		if err := _wsServer.Shutdown(context.Background()); err != nil {
+			log.Printf("failed to shutdown ws server: %v", err)
+		}
 	}
 }
 
@@ -98,18 +119,22 @@ func startWsServer(config config.Config) {
 	})
 
 	log.Printf("opensocks ws server started on %s", config.ServerAddr)
-	http.ListenAndServe(config.ServerAddr, nil)
+	_wsServer = http.Server{
+		Addr: config.ServerAddr,
+	}
+	_wsServer.ListenAndServe()
 }
 
 func startKcpServer(config config.Config) {
 	key := pbkdf2.Key([]byte(config.Key), []byte("opensocks@2022"), 1024, 32, sha1.New)
 	block, _ := kcp.NewAESBlockCrypt(key)
-	if listener, err := kcp.ListenWithOptions(config.ServerAddr, block, 10, 3); err == nil {
+	var err error
+	if _kcpListener, err = kcp.ListenWithOptions(config.ServerAddr, block, 10, 3); err == nil {
 		log.Printf("opensocks kcp server started on %s", config.ServerAddr)
 		for {
-			conn, err := listener.AcceptKCP()
+			conn, err := _kcpListener.AcceptKCP()
 			if err != nil {
-				continue
+				break
 			}
 			conn.SetWindowSize(enum.SndWnd, enum.RcvWnd)
 			if err := conn.SetReadBuffer(enum.SockBuf); err != nil {

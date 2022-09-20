@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/url"
@@ -10,20 +11,42 @@ import (
 	p "golang.org/x/net/proxy"
 )
 
-//Start client
+var _tcpServer proxy.TCPServer
+var _udpServer proxy.UDPServer
+var _httpServer http.Server
+
+// Start starts the client
 func Start(config config.Config) {
 	// start http server
 	if config.HttpProxy {
 		go startHttpServer(config)
 	}
 	// start udp server
-	udpServer := &proxy.UDPServer{Config: config}
-	udpConn := udpServer.Start()
+	_udpServer = proxy.UDPServer{Config: config}
+	udpConn := _udpServer.Start()
 	// start tcp server
-	tcpServer := &proxy.TCPServer{Config: config, Tproxy: &proxy.TCPProxy{Config: config}, Uproxy: &proxy.UDPProxy{Config: config}, UDPConn: udpConn}
-	tcpServer.Start()
+	_tcpServer = proxy.TCPServer{Config: config, Tproxy: &proxy.TCPProxy{Config: config}, Uproxy: &proxy.UDPProxy{Config: config}, UDPConn: udpConn}
+	_tcpServer.Start()
 }
 
+// Stop stops the client
+func Stop() {
+	if _tcpServer.Listener != nil {
+		if err := _tcpServer.Listener.Close(); err != nil {
+			log.Printf("failed to shutdown tcp server: %v", err)
+		}
+	}
+	if _udpServer.UDPConn != nil {
+		if err := _udpServer.UDPConn.Close(); err != nil {
+			log.Printf("failed to shutdown udp server: %v", err)
+		}
+	}
+	if _httpServer.Addr != "" && _httpServer.Handler != nil {
+		if err := _httpServer.Shutdown(context.Background()); err != nil {
+			log.Printf("failed to shutdown http server: %v", err)
+		}
+	}
+}
 func startHttpServer(config config.Config) {
 	socksURL, err := url.Parse("socks5://" + config.LocalAddr)
 	if err != nil {
@@ -34,7 +57,11 @@ func startHttpServer(config config.Config) {
 		log.Fatalln("can not make proxy dialer:", err)
 	}
 	log.Printf("opensocks [http] client started on %s", config.LocalHttpProxyAddr)
-	if err := http.ListenAndServe(config.LocalHttpProxyAddr, &proxy.HttpProxyHandler{Dialer: socks5Dialer}); err != nil {
+	_httpServer = http.Server{
+		Addr:    config.LocalHttpProxyAddr,
+		Handler: &proxy.HttpProxyHandler{Dialer: socks5Dialer},
+	}
+	if err := _httpServer.ListenAndServe(); err != nil {
 		log.Fatalln("can not start http server:", err)
 	}
 }
