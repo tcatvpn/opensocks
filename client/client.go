@@ -47,6 +47,7 @@ func Stop() {
 		}
 	}
 }
+
 func startHttpServer(config config.Config) {
 	socksURL, err := url.Parse("socks5://" + config.LocalAddr)
 	if err != nil {
@@ -54,7 +55,7 @@ func startHttpServer(config config.Config) {
 	}
 	socks5Dialer, err := p.FromURL(socksURL, p.Direct)
 	if err != nil {
-		log.Fatalln("can not make proxy dialer:", err)
+		log.Fatalln("failed to make proxy dialer:", err)
 	}
 	log.Printf("opensocks [http] client started on %s", config.LocalHttpProxyAddr)
 	_httpServer = http.Server{
@@ -62,6 +63,6 @@ func startHttpServer(config config.Config) {
 		Handler: &proxy.HttpProxyHandler{Dialer: socks5Dialer},
 	}
 	if err := _httpServer.ListenAndServe(); err != nil {
-		log.Fatalln("can not start http server:", err)
+		log.Fatalln("failed to start http server:", err)
 	}
 }
