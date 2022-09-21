@@ -17,3 +17,9 @@ func IncrReadBytes(n int) {
 func IncrWrittenBytes(n int) {
 	atomic.AddUint64(&TotalWrittenBytes, uint64(n))
 }
+
+// Clean clean the counter
+func Clean() {
+	TotalReadBytes = 0
+	TotalWrittenBytes = 0
+}

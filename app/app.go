@@ -13,6 +13,7 @@ import (
 
 // Start starts the app by json config
 func Start(jsonConfig string) {
+	counter.Clean()
 	config := config.Config{}
 	err := json.Unmarshal([]byte(jsonConfig), &config)
 	if err != nil {
@@ -29,11 +30,13 @@ func Start(jsonConfig string) {
 // StopClient stops the client
 func StopClient() {
 	client.Stop()
+	counter.Clean()
 }
 
 // StopServer stops the server
 func StopServer() {
 	server.Stop()
+	counter.Clean()
 }
 
 // GetTotalReadBytes returns the total read bytes
