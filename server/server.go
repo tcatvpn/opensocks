@@ -62,7 +62,7 @@ var _serverType string
 
 // Start starts the server
 func Start(config config.Config) {
-	util.PrintStats(config.Verbose)
+	util.PrintStats(config.Verbose, config.ServerMode)
 	switch config.Protocol {
 	case "kcp":
 		_serverType = "kcp"
@@ -124,7 +124,7 @@ func startWSServer(config config.Config) {
 	})
 
 	http.HandleFunc("/stats", func(w http.ResponseWriter, req *http.Request) {
-		io.WriteString(w, counter.PrintBytes())
+		io.WriteString(w, counter.PrintServerBytes())
 	})
 
 	log.Printf("opensocks ws server started on %s", config.ServerAddr)

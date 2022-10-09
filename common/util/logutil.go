@@ -16,14 +16,18 @@ func PrintLog(enableVerbose bool, format string, v ...any) {
 }
 
 // PrintStats returns the stats info
-func PrintStats(enableVerbose bool) {
+func PrintStats(enableVerbose bool, serverMode bool) {
 	if !enableVerbose {
 		return
 	}
 	go func() {
 		for {
 			time.Sleep(30 * time.Second)
-			log.Printf("stats:%v", counter.PrintBytes())
+			if serverMode {
+				log.Printf("stats:%v", counter.PrintServerBytes())
+			} else {
+				log.Printf("stats:%v", counter.PrintClientBytes())
+			}
 		}
 	}()
 }

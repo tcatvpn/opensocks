@@ -23,8 +23,13 @@ func IncrWrittenBytes(n int) {
 	atomic.AddUint64(&TotalWrittenBytes, uint64(n))
 }
 
-// PrintBytes returns the bytes info
-func PrintBytes() string {
+// PrintClientBytes returns the bytes info on client side
+func PrintClientBytes() string {
+	return fmt.Sprintf("download %v upload %v", bytesize.New(float64(TotalReadBytes)).String(), bytesize.New(float64(TotalWrittenBytes)).String())
+}
+
+// PrintServerBytes returns the bytes info on server side
+func PrintServerBytes() string {
 	return fmt.Sprintf("download %v upload %v", bytesize.New(float64(TotalWrittenBytes)).String(), bytesize.New(float64(TotalReadBytes)).String())
 }
 

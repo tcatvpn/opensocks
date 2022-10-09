@@ -18,7 +18,7 @@ var _httpServer http.Server
 
 // Start starts the client
 func Start(config config.Config) {
-	util.PrintStats(config.Verbose)
+	util.PrintStats(config.Verbose, config.ServerMode)
 	// start http server
 	if config.HttpProxy {
 		go startHttpServer(config)
