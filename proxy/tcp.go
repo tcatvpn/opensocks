@@ -87,7 +87,6 @@ func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 		tcpconn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := tcpconn.Read(buffer)
 		if err != nil {
-			util.PrintLog(t.Config.Verbose, "failed to read:%v", err)
 			break
 		}
 		b := buffer[:n]
@@ -99,7 +98,6 @@ func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 		}
 		_, err = stream.Write(b)
 		if err != nil {
-			util.PrintLog(t.Config.Verbose, "failed to write:%v", err)
 			break
 		}
 		counter.IncrWrittenBytes(n)
@@ -115,7 +113,6 @@ func (t *TCPProxy) toClient(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	for {
 		n, err := stream.Read(buffer)
 		if err != nil {
-			util.PrintLog(t.Config.Verbose, "failed to read:%v", err)
 			break
 		}
 		b := buffer[:n]
@@ -131,7 +128,6 @@ func (t *TCPProxy) toClient(stream io.ReadWriteCloser, tcpconn net.Conn) {
 		}
 		_, err = tcpconn.Write(b)
 		if err != nil {
-			util.PrintLog(t.Config.Verbose, "failed to write:%v", err)
 			break
 		}
 		counter.IncrReadBytes(n)

@@ -119,7 +119,6 @@ func (u *UDPServer) toClient(stream io.ReadWriteCloser, cliAddr *net.UDPAddr) {
 	for {
 		n, err := stream.Read(buffer)
 		if err != nil {
-			util.PrintLog(u.Config.Verbose, "failed to read:%v", err)
 			break
 		}
 		if header, ok := u.headerMap.Load(key); ok {
@@ -139,7 +138,6 @@ func (u *UDPServer) toClient(stream io.ReadWriteCloser, cliAddr *net.UDPAddr) {
 			data.Write(b)
 			_, err = u.UDPConn.WriteToUDP(data.Bytes(), cliAddr)
 			if err != nil {
-				util.PrintLog(u.Config.Verbose, "failed to write:%v", err)
 				break
 			}
 			counter.IncrReadBytes(n)
@@ -171,8 +169,8 @@ func (u *UDPServer) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, data
 		header = b[0:10]
 		data = b[10:]
 	case enum.FqdnAddress:
-		domainLength := int(b[4])
-		domain := string(b[5 : 5+domainLength])
+		dlen := int(b[4])
+		domain := string(b[5 : 5+dlen])
 		ipAddr, err := net.ResolveIPAddr("ip", domain)
 		if err != nil {
 			log.Printf("[udp] failed to resolve dns %s:%v", domain, err)
@@ -180,10 +178,10 @@ func (u *UDPServer) getAddr(b []byte) (dstAddr *net.UDPAddr, header []byte, data
 		}
 		dstAddr = &net.UDPAddr{
 			IP:   ipAddr.IP,
-			Port: int(b[5+domainLength])<<8 | int(b[6+domainLength]),
+			Port: int(b[5+dlen])<<8 | int(b[6+dlen]),
 		}
-		header = b[0 : 7+domainLength]
-		data = b[7+domainLength:]
+		header = b[0 : 7+dlen]
+		data = b[7+dlen:]
 	case enum.Ipv6Address:
 		{
 			dstAddr = &net.UDPAddr{

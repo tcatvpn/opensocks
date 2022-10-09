@@ -194,7 +194,7 @@ func muxHandler(w net.Conn, config config.Config) {
 			if !ok {
 				return
 			}
-			util.PrintLog(config.Verbose, "[server] dial to server %v %v:%v", req.Network, req.Host, req.Port)
+			util.PrintLog(config.Verbose, "[server] dial to server %v", req.Network, req.Host, req.Port)
 			conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(enum.Timeout)*time.Second)
 			if err != nil {
 				util.PrintLog(config.Verbose, "[server] failed to dial server %v", err)
@@ -240,7 +240,6 @@ func toClient(config config.Config, stream net.Conn, conn net.Conn) {
 		conn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := conn.Read(buffer)
 		if err != nil {
-			util.PrintLog(config.Verbose, "failed to read:%v", err)
 			break
 		}
 		b := buffer[:n]
@@ -252,7 +251,6 @@ func toClient(config config.Config, stream net.Conn, conn net.Conn) {
 		}
 		_, err = stream.Write(b)
 		if err != nil {
-			util.PrintLog(config.Verbose, "failed to write:%v", err)
 			break
 		}
 		counter.IncrWrittenBytes(n)
@@ -266,7 +264,6 @@ func toServer(config config.Config, reader *bufio.Reader, conn net.Conn) {
 	for {
 		n, err := reader.Read(buffer)
 		if err != nil {
-			util.PrintLog(config.Verbose, "failed to read:%v", err)
 			break
 		}
 		b := buffer[:n]
@@ -282,7 +279,6 @@ func toServer(config config.Config, reader *bufio.Reader, conn net.Conn) {
 		}
 		_, err = conn.Write(b)
 		if err != nil {
-			util.PrintLog(config.Verbose, "failed to write:%v", err)
 			break
 		}
 		counter.IncrReadBytes(int(n))
