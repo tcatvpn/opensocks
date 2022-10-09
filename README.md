@@ -30,6 +30,7 @@ Usage of opensocks:
         local http proxy address (default ":8008")
   -http-proxy
         enable http proxy
+  -v    enable verbose output
 ```
 # Run
 ## Run client
