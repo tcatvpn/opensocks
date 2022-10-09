@@ -1,6 +1,6 @@
 # Opensocks
 
-A multiplexing socks5/http/https proxy that supports websocket and kcp protocol.
+A multiplexing socks5/http/https proxy that supports websocket/kcp/tcp protocol.
 
 [![Travis](https://travis-ci.com/net-byte/opensocks.svg?branch=main)](https://github.com/net-byte/opensocks)
 [![Go Report Card](https://goreportcard.com/badge/github.com/net-byte/opensocks)](https://goreportcard.com/report/github.com/net-byte/opensocks)
@@ -23,7 +23,7 @@ Usage of opensocks:
   -compress
       enable data compression
   -p string
-      protocol ws/wss/kcp (default "wss")
+      protocol ws/wss/kcp/tcp (default "wss")
   -s string
       server address (default ":8081")
   -http string

@@ -12,6 +12,7 @@ import (
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/common/pool"
+	"github.com/net-byte/opensocks/common/util"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 	"github.com/xtaci/smux"
@@ -51,7 +52,7 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 		t.Session, err = smux.Client(wsconn, smuxConfig)
 		if err != nil || t.Session == nil {
 			t.Lock.Unlock()
-			log.Println(err)
+			util.PrintLog(t.Config.Verbose, "failed to open client:%v", err)
 			resp(conn, enum.ConnectionRefused)
 			return
 		}
@@ -60,7 +61,7 @@ func (t *TCPProxy) Proxy(conn net.Conn, data []byte) {
 	stream, err := t.Session.Open()
 	if err != nil {
 		t.Session = nil
-		log.Println(err)
+		util.PrintLog(t.Config.Verbose, "failed to open session:%v", err)
 		resp(conn, enum.ConnectionRefused)
 		return
 	}
@@ -85,7 +86,8 @@ func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	for {
 		tcpconn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := tcpconn.Read(buffer)
-		if err != nil || n == 0 {
+		if err != nil {
+			util.PrintLog(t.Config.Verbose, "failed to read:%v", err)
 			break
 		}
 		b := buffer[:n]
@@ -97,6 +99,7 @@ func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 		}
 		_, err = stream.Write(b)
 		if err != nil {
+			util.PrintLog(t.Config.Verbose, "failed to write:%v", err)
 			break
 		}
 		counter.IncrWrittenBytes(n)
@@ -111,13 +114,15 @@ func (t *TCPProxy) toClient(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	defer pool.BytePool.Put(buffer)
 	for {
 		n, err := stream.Read(buffer)
-		if err != nil || n == 0 {
+		if err != nil {
+			util.PrintLog(t.Config.Verbose, "failed to read:%v", err)
 			break
 		}
 		b := buffer[:n]
 		if t.Config.Compress {
 			b, err = snappy.Decode(nil, b)
 			if err != nil {
+				util.PrintLog(t.Config.Verbose, "failed to decode:%v", err)
 				break
 			}
 		}
@@ -126,6 +131,7 @@ func (t *TCPProxy) toClient(stream io.ReadWriteCloser, tcpconn net.Conn) {
 		}
 		_, err = tcpconn.Write(b)
 		if err != nil {
+			util.PrintLog(t.Config.Verbose, "failed to write:%v", err)
 			break
 		}
 		counter.IncrReadBytes(n)

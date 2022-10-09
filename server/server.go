@@ -15,10 +15,10 @@ import (
 
 	"github.com/gobwas/ws"
 	"github.com/golang/snappy"
-	"github.com/inhies/go-bytesize"
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/common/pool"
+	"github.com/net-byte/opensocks/common/util"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 	"github.com/net-byte/opensocks/proto"
@@ -56,35 +56,45 @@ Commercial support is available at
 </html>`)
 
 var _wsServer http.Server
+var _tcpListener net.Listener
 var _kcpListener *kcp.Listener
 var _serverType string
 
 // Start starts the server
 func Start(config config.Config) {
-	if config.Protocol == "kcp" {
+	util.PrintStats(config.Verbose)
+	switch config.Protocol {
+	case "kcp":
 		_serverType = "kcp"
-		startKcpServer(config)
-	} else {
+		startKCPServer(config)
+	case "tcp":
+		_serverType = "tcp"
+		startTCPServer(config)
+	default:
 		_serverType = "ws"
-		startWsServer(config)
+		startWSServer(config)
 	}
 }
 
 // Stop starts the server
 func Stop() {
-	if _serverType == "kcp" {
+	switch _serverType {
+	case "kcp":
 		if err := _kcpListener.Close(); err != nil {
 			log.Printf("failed to shutdown kcp server: %v", err)
 		}
-	}
-	if _serverType == "ws" {
+	case "tcp":
+		if err := _tcpListener.Close(); err != nil {
+			log.Printf("failed to shutdown tcp server: %v", err)
+		}
+	default:
 		if err := _wsServer.Shutdown(context.Background()); err != nil {
 			log.Printf("failed to shutdown ws server: %v", err)
 		}
 	}
 }
 
-func startWsServer(config config.Config) {
+func startWSServer(config config.Config) {
 	http.HandleFunc(enum.WSPath, func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
@@ -114,8 +124,7 @@ func startWsServer(config config.Config) {
 	})
 
 	http.HandleFunc("/stats", func(w http.ResponseWriter, req *http.Request) {
-		resp := fmt.Sprintf("download %v upload %v \r\n", bytesize.New(float64(counter.TotalWrittenBytes)).String(), bytesize.New(float64(counter.TotalReadBytes)).String())
-		io.WriteString(w, resp)
+		io.WriteString(w, counter.PrintBytes())
 	})
 
 	log.Printf("opensocks ws server started on %s", config.ServerAddr)
@@ -125,7 +134,7 @@ func startWsServer(config config.Config) {
 	_wsServer.ListenAndServe()
 }
 
-func startKcpServer(config config.Config) {
+func startKCPServer(config config.Config) {
 	key := pbkdf2.Key([]byte(config.Key), []byte("opensocks@2022"), 1024, 32, sha1.New)
 	block, _ := kcp.NewAESBlockCrypt(key)
 	var err error
@@ -139,6 +148,20 @@ func startKcpServer(config config.Config) {
 			conn.SetWindowSize(enum.SndWnd, enum.RcvWnd)
 			if err := conn.SetReadBuffer(enum.SockBuf); err != nil {
 				log.Println("[server] failed to set read buffer:", err)
+			}
+			go muxHandler(conn, config)
+		}
+	}
+}
+
+func startTCPServer(config config.Config) {
+	var err error
+	if _tcpListener, err = net.Listen("tcp", config.ServerAddr); err == nil {
+		log.Printf("opensocks tcp server started on %s", config.ServerAddr)
+		for {
+			conn, err := _tcpListener.Accept()
+			if err != nil {
+				break
 			}
 			go muxHandler(conn, config)
 		}
@@ -160,7 +183,7 @@ func muxHandler(w net.Conn, config config.Config) {
 	for {
 		stream, err := session.AcceptStream()
 		if err != nil {
-			log.Printf("[server] failed to accept steam %v", err)
+			util.PrintLog(config.Verbose, "[server] failed to accept steam %v", err)
 			break
 		}
 		go func() {
@@ -171,10 +194,10 @@ func muxHandler(w net.Conn, config config.Config) {
 			if !ok {
 				return
 			}
-			log.Printf("[server] dial to server %v %v:%v", req.Network, req.Host, req.Port)
+			util.PrintLog(config.Verbose, "[server] dial to server %v %v:%v", req.Network, req.Host, req.Port)
 			conn, err := net.DialTimeout(req.Network, net.JoinHostPort(req.Host, req.Port), time.Duration(enum.Timeout)*time.Second)
 			if err != nil {
-				log.Printf("[server] failed to dial server %v", err)
+				util.PrintLog(config.Verbose, "[server] failed to dial server %v", err)
 				return
 			}
 			// forward data
@@ -194,16 +217,16 @@ func handshake(config config.Config, reader *bufio.Reader) (bool, proxy.RequestA
 		b = cipher.XOR(b)
 	}
 	if req.UnmarshalBinary(b) != nil {
-		log.Printf("[server] failed to decode request %v", err)
+		util.PrintLog(config.Verbose, "[server] failed to decode request %v", err)
 		return false, req
 	}
 	reqTime, _ := strconv.ParseInt(req.Timestamp, 10, 64)
 	if time.Now().Unix()-reqTime > int64(enum.Timeout) {
-		log.Printf("[server] timestamp expired %v", reqTime)
+		util.PrintLog(config.Verbose, "[server] timestamp expired %v", reqTime)
 		return false, req
 	}
 	if config.Key != req.Key {
-		log.Printf("[server] error key %s", req.Key)
+		util.PrintLog(config.Verbose, "[server] error key %s", req.Key)
 		return false, req
 	}
 	return true, req
@@ -216,7 +239,8 @@ func toClient(config config.Config, stream net.Conn, conn net.Conn) {
 	for {
 		conn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := conn.Read(buffer)
-		if err != nil || n == 0 {
+		if err != nil {
+			util.PrintLog(config.Verbose, "failed to read:%v", err)
 			break
 		}
 		b := buffer[:n]
@@ -228,6 +252,7 @@ func toClient(config config.Config, stream net.Conn, conn net.Conn) {
 		}
 		_, err = stream.Write(b)
 		if err != nil {
+			util.PrintLog(config.Verbose, "failed to write:%v", err)
 			break
 		}
 		counter.IncrWrittenBytes(n)
@@ -240,13 +265,15 @@ func toServer(config config.Config, reader *bufio.Reader, conn net.Conn) {
 	defer pool.BytePool.Put(buffer)
 	for {
 		n, err := reader.Read(buffer)
-		if err != nil || n == 0 {
+		if err != nil {
+			util.PrintLog(config.Verbose, "failed to read:%v", err)
 			break
 		}
 		b := buffer[:n]
 		if config.Compress {
 			b, err = snappy.Decode(nil, b)
 			if err != nil {
+				util.PrintLog(config.Verbose, "failed to decode:%v", err)
 				break
 			}
 		}
@@ -255,6 +282,7 @@ func toServer(config config.Config, reader *bufio.Reader, conn net.Conn) {
 		}
 		_, err = conn.Write(b)
 		if err != nil {
+			util.PrintLog(config.Verbose, "failed to write:%v", err)
 			break
 		}
 		counter.IncrReadBytes(int(n))

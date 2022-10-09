@@ -36,6 +36,14 @@ func connectServer(config config.Config) net.Conn {
 		log.Printf("[client] kcp server connected %s", config.ServerAddr)
 		return c
 
+	} else if config.Protocol == "tcp" {
+		c, err := net.DialTimeout("tcp", config.ServerAddr, time.Duration(enum.Timeout)*time.Second)
+		if err != nil {
+			log.Printf("[client] failed to dial tcp server %s %v", config.ServerAddr, err)
+			return nil
+		}
+		log.Printf("[client] tcp server connected %s", config.ServerAddr)
+		return c
 	} else {
 		url := fmt.Sprintf("%s://%s%s", config.Protocol, config.ServerAddr, enum.WSPath)
 		dialer := &ws.Dialer{ReadBufferSize: enum.BufferSize, WriteBufferSize: enum.BufferSize, Timeout: time.Duration(enum.Timeout) * time.Second}

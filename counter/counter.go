@@ -1,6 +1,11 @@
 package counter
 
-import "sync/atomic"
+import (
+	"fmt"
+	"sync/atomic"
+
+	"github.com/inhies/go-bytesize"
+)
 
 // TotalReadBytes is the total number of bytes read
 var TotalReadBytes uint64 = 0
@@ -16,6 +21,11 @@ func IncrReadBytes(n int) {
 // IncrWrittenBytes increments the number of bytes written
 func IncrWrittenBytes(n int) {
 	atomic.AddUint64(&TotalWrittenBytes, uint64(n))
+}
+
+// PrintBytes returns the bytes info
+func PrintBytes() string {
+	return fmt.Sprintf("download %v upload %v", bytesize.New(float64(TotalWrittenBytes)).String(), bytesize.New(float64(TotalReadBytes)).String())
 }
 
 // Clean clean the counter

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/net-byte/opensocks/common/util"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/proxy"
 	p "golang.org/x/net/proxy"
@@ -17,6 +18,7 @@ var _httpServer http.Server
 
 // Start starts the client
 func Start(config config.Config) {
+	util.PrintStats(config.Verbose)
 	// start http server
 	if config.HttpProxy {
 		go startHttpServer(config)

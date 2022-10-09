@@ -13,6 +13,7 @@ import (
 	"github.com/net-byte/opensocks/common/cipher"
 	"github.com/net-byte/opensocks/common/enum"
 	"github.com/net-byte/opensocks/common/pool"
+	"github.com/net-byte/opensocks/common/util"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/counter"
 	"github.com/xtaci/smux"
@@ -83,7 +84,7 @@ func (u *UDPServer) toServer() {
 			stream, err = u.Session.Open()
 			if err != nil {
 				u.Session = nil
-				log.Println(err)
+				util.PrintLog(u.Config.Verbose, "failed to open session:%v", err)
 				continue
 			}
 			ok := handshake(stream, "udp", dstAddr.IP.String(), strconv.Itoa(dstAddr.Port), u.Config.Key, u.Config.Obfs)
@@ -117,7 +118,8 @@ func (u *UDPServer) toClient(stream io.ReadWriteCloser, cliAddr *net.UDPAddr) {
 	defer stream.Close()
 	for {
 		n, err := stream.Read(buffer)
-		if err != nil || n == 0 {
+		if err != nil {
+			util.PrintLog(u.Config.Verbose, "failed to read:%v", err)
 			break
 		}
 		if header, ok := u.headerMap.Load(key); ok {
@@ -125,6 +127,7 @@ func (u *UDPServer) toClient(stream io.ReadWriteCloser, cliAddr *net.UDPAddr) {
 			if u.Config.Compress {
 				b, err = snappy.Decode(nil, b)
 				if err != nil {
+					util.PrintLog(u.Config.Verbose, "failed to decode:%v", err)
 					break
 				}
 			}
@@ -136,6 +139,7 @@ func (u *UDPServer) toClient(stream io.ReadWriteCloser, cliAddr *net.UDPAddr) {
 			data.Write(b)
 			_, err = u.UDPConn.WriteToUDP(data.Bytes(), cliAddr)
 			if err != nil {
+				util.PrintLog(u.Config.Verbose, "failed to write:%v", err)
 				break
 			}
 			counter.IncrReadBytes(n)

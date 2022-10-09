@@ -16,6 +16,7 @@ type Config struct {
 	Obfs               bool
 	Compress           bool
 	HttpProxy          bool
+	Verbose            bool
 }
 
 func (config *Config) Init() {
