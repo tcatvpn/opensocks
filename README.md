@@ -7,7 +7,9 @@ A multiplexing socks5/http/https proxy that supports websocket/kcp/tcp protocol.
 ![image](https://img.shields.io/badge/License-MIT-orange)
 ![image](https://img.shields.io/badge/License-Anti--996-red)
 ![image](https://img.shields.io/github/downloads/net-byte/opensocks/total.svg)
-
+<p>
+<a href="https://play.google.com/store/apps/details?id=com.netbyte.opensocks"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" height="100"></a>
+</p>
 # Usage
 ```
 Usage of opensocks:
