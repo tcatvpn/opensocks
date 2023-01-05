@@ -7,7 +7,6 @@ import (
 	"net"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/golang/snappy"
 	"github.com/net-byte/opensocks/common/cipher"
@@ -48,7 +47,6 @@ func (u *UDPServer) toServer() {
 	buf := pool.BytePool.Get()
 	defer pool.BytePool.Put(buf)
 	for {
-		u.UDPConn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, cliAddr, err := u.UDPConn.ReadFromUDP(buf)
 		if err != nil {
 			break

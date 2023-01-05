@@ -2,11 +2,22 @@ package main
 
 import (
 	"flag"
+	"log"
 
 	"github.com/net-byte/opensocks/client"
 	"github.com/net-byte/opensocks/config"
 	"github.com/net-byte/opensocks/server"
 )
+
+var _banner = `
+___                                        _        
+/ _ \   _ __   ___   _ _    ___  ___   __  | |__  ___
+| (_) | | '_ \ / -_) | ' \  (_-< / _ \ / _| | / / (_-<
+\___/  | .__/ \___| |_||_| /__/ \___/ \__| |_\_\ /__/
+     |_|                                           
+Source: https://github.com/net-byte/opensocks
+Version: v1.6.7
+`
 
 func main() {
 	config := config.Config{}
@@ -22,6 +33,7 @@ func main() {
 	flag.BoolVar(&config.HttpProxy, "http-proxy", false, "enable http proxy")
 	flag.BoolVar(&config.Verbose, "v", false, "enable verbose output")
 	flag.Parse()
+	log.Println(_banner)
 	config.Init()
 	if config.ServerMode {
 		server.Start(config)

@@ -237,7 +237,6 @@ func toClient(config config.Config, stream net.Conn, conn net.Conn) {
 	buffer := pool.BytePool.Get()
 	defer pool.BytePool.Put(buffer)
 	for {
-		conn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := conn.Read(buffer)
 		if err != nil {
 			break

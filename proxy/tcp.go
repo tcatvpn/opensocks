@@ -6,7 +6,6 @@ import (
 	"net"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/golang/snappy"
 	"github.com/net-byte/opensocks/common/cipher"
@@ -84,7 +83,6 @@ func (t *TCPProxy) toServer(stream io.ReadWriteCloser, tcpconn net.Conn) {
 	buffer := pool.BytePool.Get()
 	defer pool.BytePool.Put(buffer)
 	for {
-		tcpconn.SetReadDeadline(time.Now().Add(time.Duration(enum.Timeout) * time.Second))
 		n, err := tcpconn.Read(buffer)
 		if err != nil {
 			break
