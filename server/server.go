@@ -35,7 +35,7 @@ var _defaultPage = []byte(`
 <title>Welcome to opensocks!</title>
 </head>
 <body>
-<h1>Welcome to opensocks!</h1>
+<p>Welcome to opensocks!</p>
 </body>
 </html>`)
 
