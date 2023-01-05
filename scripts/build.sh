@@ -13,7 +13,5 @@ CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o ./bin/opensocks-darwin-arm64 
 CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./bin/opensocks-windows-amd64.exe ./main.go
 #Windows arm64
 CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -o ./bin/opensocks-windows-arm64.exe ./main.go
-#OpenWRT
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags="-s -w" -o ./bin/opensocks-openwrt-amd64 ./main.go
 
 echo "DONE!!!"
