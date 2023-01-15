@@ -1,6 +1,6 @@
 # Opensocks
 
-A multiplexing socks5/http/https proxy that supports websocket/kcp/tcp protocol.
+A simple multiplexing socks5/http/https proxy.
 
 [![Travis](https://travis-ci.com/net-byte/opensocks.svg?branch=main)](https://github.com/net-byte/opensocks)
 [![Go Report Card](https://goreportcard.com/badge/github.com/net-byte/opensocks)](https://goreportcard.com/report/github.com/net-byte/opensocks)

@@ -16,7 +16,7 @@ ___                                        _
 \___/  | .__/ \___| |_||_| /__/ \___/ \__| |_\_\ /__/
      |_|                                           
 Source: https://github.com/net-byte/opensocks
-Version: v1.6.7
+Version: v1.6.8
 `
 
 func main() {

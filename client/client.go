@@ -65,6 +65,6 @@ func startHttpServer(config config.Config) {
 		Handler: &proxy.HttpProxyHandler{Dialer: socks5Dialer},
 	}
 	if err := _httpServer.ListenAndServe(); err != nil {
-		log.Fatalln("failed to start http server:", err)
+		log.Printf("failed to start http server:%v", err)
 	}
 }
