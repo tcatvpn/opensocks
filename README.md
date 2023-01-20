@@ -7,9 +7,6 @@ A simple multiplexing socks5/http/https proxy.
 ![image](https://img.shields.io/badge/License-MIT-orange)
 ![image](https://img.shields.io/badge/License-Anti--996-red)
 ![image](https://img.shields.io/github/downloads/net-byte/opensocks/total.svg)
-<p>
-<a href="https://play.google.com/store/apps/details?id=com.netbyte.opensocks"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" height="100"></a>
-</p>
 
 # Usage
 ```
@@ -83,6 +80,9 @@ sysctl -p /etc/sysctl.conf
 
 # Cross-platform client
 [opensocks-gui](https://github.com/net-byte/opensocks-gui)
+<p>
+<a href="https://play.google.com/store/apps/details?id=com.netbyte.opensocks"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" height="100"></a>
+</p>
 
 # Deploy to cloud
 [opensocks-cloud](https://github.com/net-byte/opensocks-cloud)
