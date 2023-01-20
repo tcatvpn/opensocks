@@ -81,6 +81,12 @@ net.core.netdev_max_backlog=2048 // proportional to -rcvwnd
 sysctl -p /etc/sysctl.conf
 ```
 
+# Cross-platform client
+[opensocks-gui](https://github.com/net-byte/opensocks-gui)
+
+# Deploy to cloud
+[opensocks-cloud](https://github.com/net-byte/opensocks-cloud)
+
 # License
 [The MIT License (MIT)](https://raw.githubusercontent.com/net-byte/opensocks/main/LICENSE)
 
