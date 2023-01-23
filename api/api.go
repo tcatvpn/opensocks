@@ -1,4 +1,4 @@
-package app
+package api
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 
 // Start starts the app by json config
 func Start(jsonConfig string) {
-	counter.Clean()
+	CleanCounter()
 	config := config.Config{}
 	err := json.Unmarshal([]byte(jsonConfig), &config)
 	if err != nil {
@@ -30,13 +30,13 @@ func Start(jsonConfig string) {
 // StopClient stops the client
 func StopClient() {
 	client.Stop()
-	counter.Clean()
+	CleanCounter()
 }
 
 // StopServer stops the server
 func StopServer() {
 	server.Stop()
-	counter.Clean()
+	CleanCounter()
 }
 
 // GetTotalReadBytes returns the total read bytes
@@ -47,4 +47,9 @@ func GetTotalReadBytes() string {
 // GetTotalWrittenBytes returns the total written bytes
 func GetTotalWrittenBytes() string {
 	return strconv.FormatUint(counter.TotalWrittenBytes, 10)
+}
+
+// CleanCounter cleans the counter
+func CleanCounter() {
+	counter.Clean()
 }
