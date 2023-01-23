@@ -1,12 +1,16 @@
 # Opensocks
 
-A simple multiplexing socks5/http/https proxy.
+A simple multiplexing proxy.
 
 [![Travis](https://travis-ci.com/net-byte/opensocks.svg?branch=main)](https://github.com/net-byte/opensocks)
 [![Go Report Card](https://goreportcard.com/badge/github.com/net-byte/opensocks)](https://goreportcard.com/report/github.com/net-byte/opensocks)
 ![image](https://img.shields.io/badge/License-MIT-orange)
 ![image](https://img.shields.io/badge/License-Anti--996-red)
-![image](https://img.shields.io/github/downloads/net-byte/opensocks/total.svg)
+![image](https://img.shields.io/github/downloads/net-byte/opensocks/total.svg)  
+
+# Features
+* Support socks5 proxy
+* Support http(s) proxy
 
 # Usage
 ```
