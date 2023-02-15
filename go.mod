@@ -11,7 +11,7 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c
 	github.com/xtaci/kcp-go/v5 v5.6.1
-	github.com/xtaci/smux v1.5.16
+	github.com/xtaci/smux v1.5.24
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 )
