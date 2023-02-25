@@ -89,10 +89,10 @@ func startWSServer(config config.Config) {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(101)
 		w.Header().Set("Content-Type", "text/html")
-		w.Header().Set("Content-Length", strconv.Itoa(len(_defaultPage)))
-		w.Header().Set("Connection", " keep-alive")
+		w.Header().Set("Content-Length", "9999999999999")
+		w.Header().Set("Connection", " Upgrade")
 		w.Header().Set("Accept-Ranges", "bytes")
 		w.Write(_defaultPage)
 	})
