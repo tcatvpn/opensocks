@@ -32,7 +32,7 @@ var _defaultPage = []byte(`
 <!DOCTYPE html>
 <html>
 <head>
-<title>Welcome to opensocks!</title>
+<title>Welcome to opensocks this Server made by MAHBOUB-MILLON!</title>
 </head>
 <body>
 <p>Welcome to opensocks!</p>
